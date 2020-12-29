@@ -1,0 +1,5 @@
+<launch>
+    <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_stage_1.launch"/>
+    <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_gazebo_rviz.launch"/>
+    <node pkg="rpsexamples" name="smartsensor" type="smartsensor.py" respawn="false" output="screen" />
+</launch>
