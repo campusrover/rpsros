@@ -1,16 +1,10 @@
 #!/usr/bin/env python
 
 import rospy
-import tf
-from std_msgs.msg import String, Header
-from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
-from math import sqrt, cos, sin, pi, atan2, isnan
-import numpy
+from math import pi
 import sys
 from rpsexamples.msg import Sensor
-from std_msgs.msg import ColorRGBA
-from math import pi, radians
 import smartpid
 
 class WallFollower:
@@ -50,7 +44,7 @@ class WallFollower:
        	self.controller.update_control(cross_track_error)
 
        	cmd = Twist()
-        cmd.linear.x = self.forward_speed
+        cmd.linear.x = min(self.forward_speed, self.speed_limit)
 
   		#Getting the new cmd.angular.z
        	cmd.angular.z = self.controller.get_control()
@@ -68,9 +62,10 @@ class WallFollower:
         
     # Update latest params
     def update_params(self):
-        self.forward_speed = rospy.get_param("wallfollow/forward_speed", 0)
-        self.desired_distance_from_wall = rospy.get_param("wallfollow/desired_distance_from_wall", 1)
-    
+        self.forward_speed = rospy.get_param("wallfollow/forward_speed")
+        self.desired_distance_from_wall = rospy.get_param("wallfollow/desired_distance_from_wall")
+        self.speed_limit = rospy.get_param("wallfollow/speed_limit")
+
     def stop(self):
         twist = Twist()
         twist.linear.x = 0
