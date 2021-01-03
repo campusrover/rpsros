@@ -24,11 +24,7 @@ class SmartSensor(basenode.BaseNode):
     GREY = ColorRGBA(0.6, 0.6, 0.6, 1)
 
     def invert_angle(self,angle):
-        # """To make the arrow markers work correctly we need to flip the angle because angles go the other way there"""
-        # if (self.GAZEBO):
-        #     return (angle + pi) % (2 * pi)
-        # else:
-        #     return angle
+        #return (angle + pi) % (2 * pi)
         return angle
 
     def marker_array_pub(self):
@@ -68,7 +64,7 @@ class SmartSensor(basenode.BaseNode):
         self.right_dist = filter_and_average[self.RIGHT_BEAR*lidar_div]
         self.left_dist = filter_and_average[self.LEFT_BEAR*lidar_div]
         self.rear_dist = filter_and_average[self.REAR_BEAR*lidar_div]
-        #print("stroller_sensor nearest: %.1f bearing: %.3f front: %.3f left: %.3f rear: %.3f right: %.3f " % (self.near_dist, self.near_bear, self.front_dist, self.left_dist, self.rear_dist, self.right_dist))
+        print("smartsensor nearest: %.1f bearing: %.3f front: %.3f left: %.3f rear: %.3f right: %.3f " % (self.near_dist, self.near_bear, self.front_dist, self.left_dist, self.rear_dist, self.right_dist))
 
     def cmd_vel_callback(self,msg):
         """Whenever there's a new command for motion this will be incorporated, using the Kalman FIlter
