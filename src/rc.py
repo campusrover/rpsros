@@ -1,14 +1,18 @@
 #!/usr/bin/env python
 import cmd, sys
-from turtle import *
+import os
 import rospy
+import socket
+import tldextract
+import platform    # For getting the operating system name
+import subprocess  # For executing a shell command
 
 class Handlers:
     def __init__(self):
         self.node = False
         pass
 
-    def get_node(self):
+    def init_node(self):
         if self.node:
             return True
         try:
@@ -18,22 +22,48 @@ class Handlers:
             self.node = False
         return self.node
 
-    def show(self, param):
-        if self.check_roscore():
-            return rospy.getparam("x")
-        
+    def get_master_uri(self):
+        self.master_uri = os.getenv('ROS_MASTER_URI')
+        self.master_domainname = tldextract.extract(self.master_uri).domain
 
+    def check_rosmaster(self):
+        self.get_master_uri()
+        try:
+            host = socket.gethostbyname(self.master_domainname)
+            s = socket.create_connection((host, 11311), 2)
+            s.close()
+            self.ros_master = True
+        except:
+            pass
+        self.ros_master = False
+        return self.ros_master
+
+    def ping(self, host):
+        """
+        Returns True if host (str) responds to a ping request.
+        Remember that a host may not respond to a ping (ICMP) request even if the host name is valid.
+        """
+        # Option for the number of packets as a function of
+        param = '-n' if platform.system().lower()=='windows' else '-c'
+
+        # Building the command. Ex: "ping -c 1 google.com"
+        command = ['ping', param, '1', host]
+        return subprocess.call(command) == 0
+     
 class RosConsole(cmd.Cmd):
-    def __init__(self):
-        self.intro = 'Welcome to the ROS Console shell.   Type help or ? to list commands.'
-        self.prompt = '> '
-        self.handler = Handlers()
-    
-    def preloop(self):
-        if self.handler.get_node():
-            prompt = "> "
-        else:
-            prompt = "? "    
+    intro = 'Welcome to the ROS Console shell.   Type help or ? to list commands.'
+    handlers = Handlers()
+    prompt = "> "
+
+    def do_wtf(self, arg):
+        'Check network, roscore, etc.'
+        self.handlers.get_master_uri()
+        if self.handlers.ping(self.handlers.master_domainname):
+            print("ping master uri OK")
+        if self.handlers.check_rosmaster():
+            print("roscore OK")
+        if self.handlers.init_node():
+            print("node created.")
 
     def do_stop(self, arg):
         'Stop the robot immediately!'
@@ -51,4 +81,5 @@ class RosConsole(cmd.Cmd):
         print("param 1")
 
 if __name__ == '__main__':
-    RosConsole().cmdloop()
+    rc = RosConsole()
+    rc.cmdloop()
