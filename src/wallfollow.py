@@ -2,7 +2,7 @@
 
 import rospy
 from geometry_msgs.msg import Twist
-from math import pi
+from math import pi, isnan
 import sys
 from rpsexamples.msg import Sensor
 import smartpid
