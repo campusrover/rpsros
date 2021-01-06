@@ -7,6 +7,7 @@ import tldextract
 import platform    # For getting the operating system name
 import subprocess  # For executing a shell command
 from geometry_msgs.msg import Twist
+import teleopapi
 
 
 class Handlers:
@@ -44,7 +45,7 @@ class Handlers:
 
     def ping_host(self, host):
         """
-        Returns True if host (str) responds to a ping request.
+        Returns True if host (str) responds to a ping recduest.
         Remember that a host may not respond to a ping (ICMP) request even if the host name is valid.
         """
         # Option for the number of packets as a function of
@@ -54,31 +55,19 @@ class Handlers:
         command = ['ping', param, '1', "-t 1 -q", host]
         self.ping = subprocess.call(command) == 0
         return self.ping
-    
-    def check_cmd_vel(self):
-        if not (self.node):
-            return False
-        if not(self.cmd_vel):
-            self.cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
-
-    def cmd_vel(speed):
-        if c.cmd_vel_pub == None:
-            return False
-        t = Twist()
-        t.linear.x = 0.1
-        self.cmd_vel_pub.publish(ts)
-
-    def forward(self):
-        if self.check_cmd_vel():
-            self.cmd_vel(0.2)
-            print("OK")
      
 class RosConsole(cmd.Cmd):
     intro = 'Welcome to the ROS Console shell.   Type help or ? to list commands.'
     h = Handlers()
     prompt = "> "
 
-    def do_connect(self, arg):
+    def default(self, line):
+        cmd, arg, line = self.parseline(line)
+        func = [getattr(self, n) for n in self.get_names() if n.startswith('do_' + cmd)]
+        if func: # maybe check if exactly one or more elements, and tell the user
+            func[0](arg)
+    
+    def do_conn(self, arg):
         'Check network, roscore, etc.'
         if self.h.get_master_uri():
             if self.h.ping_host(self.h.master_domainname):
@@ -94,31 +83,47 @@ class RosConsole(cmd.Cmd):
         else:
             print("failed to locate environment variables")
 
-    def do_stop(self, arg):
-        'Stop the robot immediately!'
-        print (arg)
-        print("Stopping.")
     
-    def do_exit(self, arg):
+    def do_quit(self, arg):
         'Exit from rc'
         print('Thank you for using rc')
         return True
-
-    def do_quit(self, arg):
-        return self.do_exit(arg)
 
     def do_show(self, arg):
         'Show param'
         h.show("x")
         print("param 1")
     
-    def do_forward(self, arg):
-        'Move robot forward'
-        self.h.forward(*self.parse(arg))
+    def do_move(self, arg):
+        'Move robot forward <speed> <seconds>'
+        args = self.parse(arg)
+        if len(args) == 0:
+            args = (0.1, 1)
+        elif len(args) != 2:
+            print("Error: <speed> <seconds> required")
+            return False
+        toap = teleopapi.TeleopApi(not self.h.node)
+        toap.move(*args)
+
+    def do_turn(self, arg):
+        'Turn robot forward <speed> <seconds>'
+        args = self.parse(arg)
+        if len(args) == 0:
+            args = (0.4, 1)
+        elif len(args) != 2:
+            print("Error: <speed> <seconds> required")
+            return False
+        toap = teleopapi.TeleopApi(not self.h.node)
+        toap.turn(*args)
+
+    def do_stop(self, arg):
+        'Stop the robot immediately!'
+        toap = teleopapiTeleopApi(False)
+        toap.turn(0.0,1) # move at 0.1 m/s for 1 second.
 
     def parse(self,arg):
         'Convert a series of zero or more numbers to an argument tuple'
-        return tuple(map(int, arg.split()))
+        return tuple(map(float, arg.split()))
 
 if __name__ == '__main__':
     rc = RosConsole()
