@@ -8,9 +8,9 @@
                 imu:=true "/>
 
   <!-- Send joint values -->
-  <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher">
+  <!-- <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher">
   </node>
-  
+   -->
   <!-- Combine joint values to TF-->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
 
