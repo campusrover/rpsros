@@ -1,0 +1,18 @@
+digraph move_base {
+graph [fontname="times-roman"];
+node [fontname="times-roman"];
+edge [fontname="times-roman"];
+move_base [fillcolor=orange, fontcolor=black, fontsize=11, shape=box, style=filled];
+navigate [fillcolor=gray, fontcolor=black, fontsize=11, shape=ellipse, style=filled];
+move_base -> navigate;
+Recover [fillcolor=cyan, fontcolor=black, fontsize=11, shape=octagon, style=filled];
+move_base -> Recover;
+"Conservative Reset" [fillcolor=gray, fontcolor=black, fontsize=11, shape=ellipse, style=filled];
+Recover -> "Conservative Reset";
+"Clearing Rotation" [fillcolor=gray, fontcolor=black, fontsize=11, shape=ellipse, style=filled];
+Recover -> "Clearing Rotation";
+"Aggressive Reset" [fillcolor=gray, fontcolor=black, fontsize=11, shape=ellipse, style=filled];
+Recover -> "Aggressive Reset";
+"Clearing Rotation*" [fillcolor=gray, fontcolor=black, fontsize=11, shape=ellipse, style=filled];
+Recover -> "Clearing Rotation*";
+}
