@@ -12,7 +12,7 @@
 <!-- move_base -->
 <g id="node1" class="node">
 <title>move_base</title>
-<polygon fill="#ffa500" stroke="#000000" points="247.5752,-180 181.6038,-180 181.6038,-144 247.5752,-144 247.5752,-180"/>
+<polygon fill="#00ffff" stroke="#000000" points="256.5387,-154.5442 256.5387,-169.4558 231.9654,-180 197.2136,-180 172.6403,-169.4558 172.6403,-154.5442 197.2136,-144 231.9654,-144 256.5387,-154.5442"/>
 <text text-anchor="middle" x="214.5895" y="-158.7" font-family="Times,serif" font-size="11.00" fill="#000000">move_base</text>
 </g>
 <!-- navigate -->

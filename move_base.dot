@@ -2,7 +2,7 @@ digraph move_base {
 graph [fontname="times-roman"];
 node [fontname="times-roman"];
 edge [fontname="times-roman"];
-move_base [fillcolor=orange, fontcolor=black, fontsize=11, shape=box, style=filled];
+move_base [fillcolor=cyan, fontcolor=black, fontsize=11, shape=octagon, style=filled];
 navigate [fillcolor=gray, fontcolor=black, fontsize=11, shape=ellipse, style=filled];
 move_base -> navigate;
 Recover [fillcolor=cyan, fontcolor=black, fontsize=11, shape=octagon, style=filled];
