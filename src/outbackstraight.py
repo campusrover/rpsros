@@ -17,7 +17,7 @@ def radians_normalize(angle):
         angle += 2*pi
     while(angle>2*pi):
         angle -= 2*pi
-    print angle
+    print (angle)
     return angle
 
 def odom_cb(msg):
