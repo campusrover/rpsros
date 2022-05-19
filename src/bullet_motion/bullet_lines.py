@@ -4,27 +4,34 @@ import rospy
 import sys
 import signal
 import pid
-from math import pi, sqrt
+from math import pi, sqrt, atan2
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
+from numpy import arange
+from nav_msgs.msg import Path
+from geometry_msgs.msg import PoseStamped
 
 FORWARD_SPEED = 0.3
-ROTATION = 0.5
+ROTATION = 0.8
 DEBUG = True
+DISTANCE = 1
 
 class Roamer:
     def __init__(self):
         # Initialize this program as a node
         rospy.init_node("outback")
         signal.signal(signal.SIGINT, self.shutdown)
+        self.path = Path()
         self.twist = Twist()
-        # self.twist.linear.x = FORWARD_SPEED
-        self.pid = pid.PID(-0.5, 0.5, 0.5, 0.0, 0.0)
-        self.state = "idle"
+        self.twist.linear.x = FORWARD_SPEED
+        self.pid = pid.PID(-0.8, 0.5, 0.5, 0.0, 0.0)
+        self.state = "start"
         self.initial_yaw = None
         self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
         self.odom_sub = rospy.Subscriber("/odom", Odometry, self.odom_cb)
+        self.path_pub = rospy.Publisher('/path', Path, queue_size=10)
+
         if DEBUG:
             print("dir, dist, yaw, bearingerror")
 
@@ -50,10 +57,10 @@ class Roamer:
         return angle
 
     def radians_norm(self, angle):
-        while angle < -pi/2.0:
-            angle = pi + angle
-        while angle > pi/2.0:
-            angle = angle - pi
+        while angle < -pi:
+            angle = 2*pi + angle
+        while angle > pi:
+            angle = angle - 2*pi
         return angle
 
     def kinematics(self, current_z, speed, turn):
@@ -66,8 +73,16 @@ class Roamer:
         t.angular.z = turn - current_z
         return t
 
-    def distance_from_start(self, x, y):
-        return sqrt((x - self.start_x) ** 2 + (y - self.start_y) ** 2)
+    def distance_from(self, x1, y1, x2, y2):
+        return sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
+    def build_path(self,data):
+        self.path.header = data.header
+        pose = PoseStamped()
+        pose.header = data.header
+        pose.pose = data.pose.pose
+        self.path.poses.append(pose)
+        self.path_pub.publish(self.path)
 
     def pose(self, msg):
         """extract and convert pose components we need"""
@@ -76,20 +91,21 @@ class Roamer:
         x = opoint.x
         oquat = msg.pose.pose.orientation
         _, _, yaw = euler_from_quaternion([oquat.x, oquat.y, oquat.z, oquat.w])
-        # if DEBUG: print(f"x: {x:1.2} y:{y:1.2} yw:{yaw:1.2}")
-        return x, y, self.radians_norm(yaw)
+        # yaw = atan2(2.0 * (oquat.w * oquat.z + oquat.x * oquat.y), oquat.w * oquat.w + oquat.x * oquat.x - oquat.y * oquat.y - oquat.z * oquat.z);
+        return x, y, yaw
 
     def odom_cb(self, msg):
+        self.build_path(msg)
         self.x, self.y, self.yaw = self.pose(msg)
         if self.initial_yaw == None:
             self.initial_yaw = self.yaw
             self.start_x = self.x
             self.start_y = self.y
             self.target_yaw = self.yaw
-        self.dist_from_start = self.distance_from_start(self.x, self.y)
+        self.dist_from_start = self.distance_from(self.start_x, self.start_y, self.x, self.y)
         self.bearing_error = self.radians_norm(self.yaw - self.target_yaw)
         if self.state == "start":
-            if self.dist_from_start >= 1.0:
+            if self.dist_from_start >= DISTANCE:
                 self.state = "turn"
                 self.target_yaw = self.radians_norm(self.yaw + pi)
                 print(f"sy: {self.yaw:1.2} ty: {self.target_yaw:1.2}")
@@ -98,28 +114,34 @@ class Roamer:
             self.print_debug("start")
         elif self.state == "turn":
             rotation_from_target = self.radians_norm(self.yaw - self.target_yaw)
-            self.dist_from_start = self.distance_from_start(self.x, self.y)
-
+            self.dist_from_start = self.distance_from(self.start_x, self.start_y, self.x, self.y)
             if -0.05 < rotation_from_target < 0.05:
                 self.state = "return"
                 self.target_yaw = self.radians_norm(self.initial_yaw + pi)
+                self.start_x = self.x
+                self.start_y = self.y
                 print(f"ty: {self.target_yaw:1.2} iy: {self.initial_yaw:1.2}")
             self.twist.angular.z = ROTATION
             self.twist.linear.x = 0
             self.print_debug("turn")
         elif self.state == "return":
             self.twist.linear.x = FORWARD_SPEED
-            self.dist_from_start = self.distance_from_start(self.x, self.y)
-            # self.bearing_error = self.radians_norm(yaw - self.target_yaw)
-            if -0.25 < self.dist_from_start < 0.25 or self.dist_from_start > 2:
+            self.dist_from_start = self.distance_from(self.start_x, self.start_y, self.x, self.y)
+            if self.dist_from_start >  DISTANCE:
                 self.state = "stop"
             pid_turn = self.pid.compute(self.target_yaw, self.yaw)
             self.twist.angular.z = pid_turn
             self.print_debug("return")
         elif self.state == "idle":
             self.print_debug("idle")
+        elif self.state == "spin":
+            self.twist.linear.x = 0
+            self.twist.angular.z = 0.7
+            print(f"{self.yaw:1.5}")
+        elif self.state == "stop":
+            self.twist = Twist()
         else:
-            print("FAIL! {self.state}")
+            print(f"FAIL! {self.state}")
 
     def full_stop(self):
         self.twist = Twist()
@@ -142,5 +164,5 @@ class Roamer:
 r = Roamer()
 r.run()
 
-# for f in range(-int(30.0*pi),+int(30.0*pi)):
-#     print(f"{f/10.0:1.3}, {r.radians_norm(f/10.0):1.3}")
+# for f in arange(-6*pi, 6*pi, pi/4.0):
+#     print(f"{f/2.0:2.4}, {r.radians_norm(f/2.0):1.4}")
