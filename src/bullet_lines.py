@@ -128,7 +128,10 @@ class Roamer:
             self.twist.linear.x = FORWARD_SPEED
             self.dist_from_start = self.distance_from(self.start_x, self.start_y, self.x, self.y)
             if self.dist_from_start >  DISTANCE:
-                self.state = "stop"
+                self.state = "start"
+                self.target_yaw = self.yaw
+                self.bearing_error = self.radians_norm(self.yaw - self.target_yaw)
+
             pid_turn = self.pid.compute(self.target_yaw, self.yaw)
             self.twist.angular.z = pid_turn
             self.print_debug("return")

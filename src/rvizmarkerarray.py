@@ -34,7 +34,7 @@ class MarkerArrayUtils:
         self.marker_message.markers.append(m)
 
 if __name__ == "__main__":
-    rospy.init_node('marker_test')
+    rospy.init_node('rvizmarkers')
     rate = rospy.Rate(3)
     bear = 10
     while not rospy.is_shutdown():

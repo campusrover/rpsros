@@ -1,3 +1,4 @@
 <launch>
-      <node pkg="rpsexamples" name="bullet_roam" type="bullet_roam.py" output="screen"  />
+      <node pkg="rpsexamples" name="bullet_lines" type="bullet_lines.py" output="screen" />
+      <node pkg="rpsexamples" name="smartlidar" type="smartlidar.py" output="screen" />
 </launch>

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import rospy
-import basenode
 from rpsexamples.msg import Sensor
 from sensor_msgs.msg import LaserScan
 import numpy as np
@@ -12,7 +11,7 @@ from rvizmarkerarray import MarkerArrayUtils
 from std_msgs.msg import ColorRGBA
 from geometry_msgs.msg import Twist
 
-class SmartSensor(basenode.BaseNode):
+class SmartLidar:
 
     FRONT_BEAR=0
     RIGHT_BEAR=270
@@ -23,15 +22,31 @@ class SmartSensor(basenode.BaseNode):
     RED = ColorRGBA(1, 0, 0, 1)
     GREY = ColorRGBA(0.6, 0.6, 0.6, 1)
 
+    def __init__(self):
+        self.hertz = 4
+        self.shutdown_requested = False
+        self.rate = rospy.Rate(self.hertz)
+
+
+    def shutdown_hook(self):
+        self.shutdown_requested = True
+        print("\n**** Shutdown Requested ****")
+
     def invert_angle(self,angle):
         return (angle + pi) % (2 * pi)
 
+
+    def wait_for_simulator(self):
+        # Wait for the simulator to be ready. If simulator is not ready, then time will be stuck at zero
+        while rospy.Time.now().to_sec() == 0:
+            self.rate.sleep()
+
     def marker_array_pub(self):
         mu = MarkerArrayUtils()
-        # mu.add_marker(1, grey, invert_angle(radians(FRONT_BEAR)), forward)
+        mu.add_marker(1, self.GREY, invert_angle(radians(FRONT_BEAR)), forward)
         mu.add_marker(2, self.GREY, self.invert_angle(math.radians(self.LEFT_BEAR)), self.left_dist)
-        # mu.add_marker(3, grey, invert_angle(radians(RIGHT_BEAR)), right)
-        # mu.add_marker(4, grey, invert_angle(radians(REAR_BEAR)), rear)
+        mu.add_marker(3, self.GREY, invert_angle(radians(RIGHT_BEAR)), right)
+        mu.add_marker(4, self.GREY, invert_angle(radians(REAR_BEAR)), rear)
         mu.add_marker(5, self.RED, self.invert_angle(self.near_bear), self.near_dist)
         mu.publish()
 
@@ -62,7 +77,7 @@ class SmartSensor(basenode.BaseNode):
         self.right_dist = filter_and_average[self.RIGHT_BEAR*lidar_div]
         self.left_dist = filter_and_average[self.LEFT_BEAR*lidar_div]
         self.rear_dist = filter_and_average[self.REAR_BEAR*lidar_div]
-        #print("smartsensor nearest: %.2f bearing: %.3f front: %.3f left: %.3f rear: %.3f right: %.3f " % (self.near_dist, math.degrees(self.near_bear), self.front_dist, self.left_dist, self.rear_dist, self.right_dist))
+        print("smartsensor nearest: %.2f bearing: %.3f front: %.3f left: %.3f rear: %.3f right: %.3f " % (self.near_dist, math.degrees(self.near_bear), self.front_dist, self.left_dist, self.rear_dist, self.right_dist))
 
     def cmd_vel_callback(self,msg):
         """Whenever there's a new command for motion this will be incorporated, using the Kalman FIlter
@@ -89,14 +104,21 @@ class SmartSensor(basenode.BaseNode):
         state_dist_temp, state_bear_temp = kalman_predict(self.state_dist, self.state_bear, control_motion)
         self.state_dist, self.state_bear = kalman_update(0.4, state_dist_temp, state_bear_temp, self.near_dist, self.near_bear)
         sensor_msg = Sensor(self.front_dist, self.left_dist, self.right_dist, self.rear_dist, self.state_dist, self.state_bear)
-        
         self.sensor_pub.publish(sensor_msg)
         self.marker_array_pub()
         self.time_now = rospy.Time.now()
+
+    def run(self):
+        self.rate = rospy.Rate(self.hertz)
+        self.pre_loop()
+        while not rospy.is_shutdown() and not self.shutdown_requested:
+            self.loop()
+            self.rate.sleep()
     
 if __name__ == '__main__':
-    rospy.init_node('prrsensor', log_level=rospy.DEBUG)
-    ss = SmartSensor()
+    rospy.init_node('smartlidar', log_level=rospy.DEBUG)
+    ss = SmartLidar()
     rospy.on_shutdown(ss.shutdown_hook)
+    ss.pre_loop()
     ss.run()
 
