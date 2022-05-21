@@ -11,6 +11,8 @@ from rvizmarkerarray import MarkerArrayUtils
 from std_msgs.msg import ColorRGBA
 from geometry_msgs.msg import Twist
 
+DEBUG = 1
+
 class SmartLidar:
 
     FRONT_BEAR=0
@@ -23,7 +25,7 @@ class SmartLidar:
     GREY = ColorRGBA(0.6, 0.6, 0.6, 1)
 
     def __init__(self):
-        self.hertz = 4
+        self.hertz = 5
         self.shutdown_requested = False
         self.rate = rospy.Rate(self.hertz)
 
@@ -33,8 +35,8 @@ class SmartLidar:
         print("\n**** Shutdown Requested ****")
 
     def invert_angle(self,angle):
-        return (angle + pi) % (2 * pi)
-
+        # return (angle + pi) % (2 * pi)
+        return angle
 
     def wait_for_simulator(self):
         # Wait for the simulator to be ready. If simulator is not ready, then time will be stuck at zero
@@ -43,10 +45,10 @@ class SmartLidar:
 
     def marker_array_pub(self):
         mu = MarkerArrayUtils()
-        mu.add_marker(1, self.GREY, invert_angle(radians(FRONT_BEAR)), forward)
+        mu.add_marker(1, self.GREY, self.invert_angle(math.radians(self.FRONT_BEAR)), self.front_dist)
         mu.add_marker(2, self.GREY, self.invert_angle(math.radians(self.LEFT_BEAR)), self.left_dist)
-        mu.add_marker(3, self.GREY, invert_angle(radians(RIGHT_BEAR)), right)
-        mu.add_marker(4, self.GREY, invert_angle(radians(REAR_BEAR)), rear)
+        mu.add_marker(3, self.GREY, self.invert_angle(math.radians(self.RIGHT_BEAR)), self.right_dist)
+        mu.add_marker(4, self.GREY, self.invert_angle(math.radians(self.REAR_BEAR)), self.rear_dist)
         mu.add_marker(5, self.RED, self.invert_angle(self.near_bear), self.near_dist)
         mu.publish()
 
@@ -66,18 +68,24 @@ class SmartLidar:
         to obstacle front, rear, left and right, in radians"""
         ar = np.array(msg.ranges)
         filter_and_average = [self.filter(ar,x) for x in range(0, ar.size)]
-        self.near_bear = np.nanargmin(np.around(filter_and_average, decimals=2))
-        self.near_dist = filter_and_average[self.near_bear]
     # minirover's lidear (ydlidar X4) sends back 720 numbers per rotation hence the divide by two, 
     # gazebo sends back 360 numbers so it doesn't have to be divided by two. The calculation is to
     # make sure the resultant lidar_div is an integer.
-        lidar_div = int(ar.size/360.0 + 0.5)
-        self.near_bear = math.radians(self.near_bear/lidar_div)
+        lidar_div = int(ar.size/720.0 + 0.5)
+        try:
+            self.near_bear = np.nanargmin(np.around(filter_and_average, decimals=2))
+            self.near_dist = filter_and_average[self.near_bear]
+            self.near_bear = math.radians(self.near_bear/lidar_div)
+        except ValueError:
+            self.near_dist = np.NAN
+            self.near_bear = np.NAN
+
         self.front_dist = filter_and_average[self.FRONT_BEAR*lidar_div]
         self.right_dist = filter_and_average[self.RIGHT_BEAR*lidar_div]
         self.left_dist = filter_and_average[self.LEFT_BEAR*lidar_div]
         self.rear_dist = filter_and_average[self.REAR_BEAR*lidar_div]
-        print("smartsensor nearest: %.2f bearing: %.3f front: %.3f left: %.3f rear: %.3f right: %.3f " % (self.near_dist, math.degrees(self.near_bear), self.front_dist, self.left_dist, self.rear_dist, self.right_dist))
+        if DEBUG:
+            print("smartlidar nearest: %.2f bearing: %.3f front: %.3f left: %.3f rear: %.3f right: %.3f " % (self.near_dist, math.degrees(self.near_bear), self.front_dist, self.left_dist, self.rear_dist, self.right_dist))
 
     def cmd_vel_callback(self,msg):
         """Whenever there's a new command for motion this will be incorporated, using the Kalman FIlter
@@ -103,7 +111,7 @@ class SmartLidar:
         control_motion = self.forward_cmd * elapsed
         state_dist_temp, state_bear_temp = kalman_predict(self.state_dist, self.state_bear, control_motion)
         self.state_dist, self.state_bear = kalman_update(0.4, state_dist_temp, state_bear_temp, self.near_dist, self.near_bear)
-        sensor_msg = Sensor(self.front_dist, self.left_dist, self.right_dist, self.rear_dist, self.state_dist, self.state_bear)
+        sensor_msg = Sensor(self.front_dist, self.left_dist, self.right_dist, self.rear_dist, self.near_dist, math.degrees(self.near_bear))
         self.sensor_pub.publish(sensor_msg)
         self.marker_array_pub()
         self.time_now = rospy.Time.now()

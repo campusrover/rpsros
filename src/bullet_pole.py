@@ -2,6 +2,7 @@
 
 import rospy
 import sys
+from rpsexamples.msg import Sensor
 import signal
 import pid
 from math import pi, sqrt, atan2
@@ -12,7 +13,9 @@ from numpy import arange
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 
+
 FORWARD_SPEED = 0.3
+SLOW_FORWARD = 0.1
 ROTATION = 0.8
 DEBUG = True
 DISTANCE = 1
@@ -20,7 +23,7 @@ DISTANCE = 1
 class Roamer:
     def __init__(self):
         # Initialize this program as a node
-        rospy.init_node("outback")
+        rospy.init_node("roamer")
         signal.signal(signal.SIGINT, self.shutdown)
         self.path = Path()
         self.twist = Twist()
@@ -29,17 +32,9 @@ class Roamer:
         self.state = "start"
         self.initial_yaw = None
         self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
-        self.odom_sub = rospy.Subscriber("/odom", Odometry, self.odom_cb)
+        # self.odom_sub = rospy.Subscriber("/odom", Odometry, self.odom_cb)
         self.path_pub = rospy.Publisher('/path', Path, queue_size=10)
-
-        if DEBUG:
-            print("dir, dist, yaw, bearingerror")
-
-    def print_debug(self, arg):
-        if DEBUG:
-            print(
-                f"{arg},{self.dist_from_start:2.3},{self.yaw:2.3},{self.bearing_error:2.3}"
-            )
+        self.smart_lidar_sub = rospy.Subscriber("/sensor", Sensor, self.smart_lidar_cb)
 
     def radians_normalize(self, angle):
         """Make sure any radian angle is 0 < angle < 2*PI"""
@@ -76,14 +71,6 @@ class Roamer:
     def distance_from(self, x1, y1, x2, y2):
         return sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
-    def build_path(self,data):
-        self.path.header = data.header
-        pose = PoseStamped()
-        pose.header = data.header
-        pose.pose = data.pose.pose
-        self.path.poses.append(pose)
-        self.path_pub.publish(self.path)
-
     def pose(self, msg):
         """extract and convert pose components we need"""
         opoint = msg.pose.pose.position
@@ -94,13 +81,27 @@ class Roamer:
         # yaw = atan2(2.0 * (oquat.w * oquat.z + oquat.x * oquat.y), oquat.w * oquat.w + oquat.x * oquat.x - oquat.y * oquat.y - oquat.z * oquat.z);
         return x, y, yaw
 
-    def odom_cb(self, msg):
+    def smart_lidar_cb(self, msg):
         # if not within 20cm of a pole, stop
         # if within 20cm then align so that pole is 9'oclock
         # move maintaining 20cm distance.
-        self.build_path(msg)
+        if self.state == "start":
+            if msg.shortest > 0.5 and msg.shortest < 0.1:
+                self.state = "stop"
+            else:
+                self.state = "align"
         elif self.state == "stop":
             self.twist = Twist()
+        elif self.state == "align":
+            self.twist = Twist()
+            self.twist.angular.z = ROTATION
+            if (30 < msg.shortest_bearing < 120):
+                self.state = "circle"
+        elif self.state == "circle":
+            self.twist = Twist()
+            self.twist.linear.x = SLOW_FORWARD
+            delta_distance = msg.shortest - 0.3
+            self.twist.angular.z = ROTATION * delta_distance*2
         else:
             print(f"FAIL! {self.state}")
 
@@ -124,6 +125,7 @@ class Roamer:
 # rate object gets a sleep() method which will sleep 1/10 seconds
 r = Roamer()
 r.run()
+print("*****")
 
 # for f in arange(-6*pi, 6*pi, pi/4.0):
 #     print(f"{f/2.0:2.4}, {r.radians_norm(f/2.0):1.4}")
