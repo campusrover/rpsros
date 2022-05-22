@@ -11,7 +11,7 @@ from rvizmarkerarray import MarkerArrayUtils
 from std_msgs.msg import ColorRGBA
 from geometry_msgs.msg import Twist
 
-DEBUG = 1
+DEBUG = 0
 
 class SmartLidar:
 

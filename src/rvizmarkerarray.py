@@ -17,7 +17,8 @@ class MarkerArrayUtils:
 
     def add_marker(self, id, color, bearing, distance):
         m = Marker()
-        m.header.frame_id = "base_scan"
+        # m.header.frame_id = "base_scan"
+        m.header.frame_id = "scan_link"
         m.id = id
         m.header.stamp = rospy.get_rostime()
         m.type = m.ARROW

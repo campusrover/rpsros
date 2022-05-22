@@ -14,11 +14,12 @@ from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 
 
-FORWARD_SPEED = 0.3
-SLOW_FORWARD = 0.1
-ROTATION = 0.8
+FORWARD_SPEED = 0.5
+SLOW_FORWARD = 0.3
+ROTATION = 0.4
 DEBUG = True
-DISTANCE = 1
+GOAL_DIST = 0.3
+GOAL_BEARING = 90
 
 class Roamer:
     def __init__(self):
@@ -35,21 +36,9 @@ class Roamer:
         # self.odom_sub = rospy.Subscriber("/odom", Odometry, self.odom_cb)
         self.path_pub = rospy.Publisher('/path', Path, queue_size=10)
         self.smart_lidar_sub = rospy.Subscriber("/sensor", Sensor, self.smart_lidar_cb)
+        if DEBUG:
+            print(f"type, short bear, short dist, delta bear, delta dist")
 
-    def radians_normalize(self, angle):
-        """Make sure any radian angle is 0 < angle < 2*PI"""
-        while angle < 0:
-            angle += 2 * pi
-        while angle > 2 * pi:
-            angle -= 2 * pi
-        return angle
-
-    def radians_normalize2(self, angle):
-        while angle < -pi:
-            angle = pi - angle
-        while angle > pi:
-            angle -= pi
-        return angle
 
     def radians_norm(self, angle):
         while angle < -pi:
@@ -58,15 +47,12 @@ class Roamer:
             angle = angle - 2*pi
         return angle
 
-    def kinematics(self, current_z, speed, turn):
-        """
-        speed is in meters/second
-        turn is in radians, positive = counter clockwise
-        """
-        t = Twist()
-        t.linear.x = speed
-        t.angular.z = turn - current_z
-        return t
+    def degrees_norm(self, angle):
+        while angle < -180:
+            angle = 360 + angle
+        while angle > 180:
+            angle = angle - 360
+        return angle
 
     def distance_from(self, x1, y1, x2, y2):
         return sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
@@ -81,33 +67,51 @@ class Roamer:
         # yaw = atan2(2.0 * (oquat.w * oquat.z + oquat.x * oquat.y), oquat.w * oquat.w + oquat.x * oquat.x - oquat.y * oquat.y - oquat.z * oquat.z);
         return x, y, yaw
 
+    def print_debug(self, arg):
+        if DEBUG:
+            print(
+                f"{arg}{self.shortest_bearing:2},{self.shortest:2.3},{self.delta_bearing:2},{self.delta_distance:2.3}"
+            )
+
     def smart_lidar_cb(self, msg):
-        # if not within 20cm of a pole, stop
-        # if within 20cm then align so that pole is 9'oclock
-        # move maintaining 20cm distance.
-        if self.state == "start":
-            if msg.shortest > 0.5 and msg.shortest < 0.1:
-                self.state = "stop"
-            else:
-                self.state = "align"
-        elif self.state == "stop":
-            self.twist = Twist()
-        elif self.state == "align":
-            self.twist = Twist()
-            self.twist.angular.z = ROTATION
-            if (30 < msg.shortest_bearing < 120):
-                self.state = "circle"
-        elif self.state == "circle":
-            self.twist = Twist()
-            self.twist.linear.x = SLOW_FORWARD
-            delta_distance = msg.shortest - 0.3
-            self.twist.angular.z = ROTATION * delta_distance*2
+        self.shortest_bearing = self.degrees_norm(msg.shortest_bearing)
+        self.shortest = msg.shortest
+        self.delta_distance = msg.shortest - GOAL_DIST
+        self.delta_bearing = self.degrees_norm(msg.shortest_bearing - GOAL_BEARING)
+
+        # if self.delta_distance > 0.4 and -5 < self.shortest_bearing < 5:
+        if self.delta_distance >= 0.4 and -25 < self.shortest_bearing < 25:
+            self.print_debug("far ok,  ")
+            self.twist = self.make_twist(0.3, 0)
+        elif self.delta_distance >= 0.4:
+            self.print_debug("far,     ")
+            #self.twist = self.make_twist(0, 0.4)
+            self.twist = self.make_twist(0, 0.6)
+        # elif self.delta_distance < 0.5  and -25 < self.delta_bearing < 25:
+        elif self.delta_distance < 0.4  and -25 < self.delta_bearing < 25:
+            self.print_debug("close ok,")
+            self.twist = self.make_twist(0.3, self.delta_distance)
+        elif self.delta_distance < 0.4:
+        # elif self.delta_distance < 0.5:
+            self.print_debug("close,   ")
+            #rotation = self.delta_bearing * 0.01
+            rotation = self.delta_bearing * 0.006
+            self.twist = self.make_twist(0.1, rotation)
         else:
-            print(f"FAIL! {self.state}")
+            self.print_debug("error,   ")
 
     def full_stop(self):
         self.twist = Twist()
         self.cmd_vel_pub.publish(self.twist)
+
+    def make_twist(self, forward_speed, rotation_speed):
+        t = Twist()
+        t.linear.x = forward_speed
+        t.angular.z = rotation_speed
+        return t
+
+    def get_twist(self, t):
+        return t.linear.x, t.angular.z
 
     def shutdown(self, sig, stackframe):
         print("Exit because of ^c")
@@ -116,8 +120,9 @@ class Roamer:
 
     def run(self):
         rate = rospy.Rate(20)
-        while not rospy.is_shutdown() and self.state != "stop":
+        while not rospy.is_shutdown():
             self.cmd_vel_pub.publish(self.twist)
+            # print(self.get_twist(self.twist))
             rate.sleep()
         self.full_stop()
 
@@ -125,7 +130,6 @@ class Roamer:
 # rate object gets a sleep() method which will sleep 1/10 seconds
 r = Roamer()
 r.run()
-print("*****")
 
 # for f in arange(-6*pi, 6*pi, pi/4.0):
 #     print(f"{f/2.0:2.4}, {r.radians_norm(f/2.0):1.4}")
