@@ -14,8 +14,8 @@ from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 
 
-FORWARD_SPEED = 0.5
-SLOW_FORWARD = 0.3
+FORWARD_SPEED = 0.2
+SLOW_FORWARD = 0.1
 SLOW_ROTATION = 0.3
 DEBUG = True
 GOAL_DIST = 0.3
@@ -28,9 +28,9 @@ class Roamer:
         print("init")
         rospy.init_node("roamer")
         signal.signal(signal.SIGINT, self.shutdown)
-        self.path = Path()
+        # self.path = Path()
         self.twist = Twist()
-        self.twist.linear.x = FORWARD_SPEED
+        # self.twist.linear.x = FORWARD_SPEED
         self.pid = pid.PID(-0.5, 0.5, -0.05, 0.0, 0.0)
         self.state = "start"
         self.initial_yaw = None
@@ -79,10 +79,10 @@ class Roamer:
         return abs(self.shortest_bearing) > 150
 
     def danger_zone(self):
-        return self.shortest <= 0.6
+        return self.shortest <= 0.4
 
     def working_zone(self):
-        return 0.6 <= self.shortest <= 1.0
+        return 0.4 <= self.shortest <= 1.0
 
     def far_zone(self):
         return self.shortest > 1.0
@@ -90,32 +90,33 @@ class Roamer:
     def parallel_wall(self):
         return GOAL_BEARING - 30 < self.shortest_bearing < GOAL_BEARING + 30
 
+    def process_rules(self, rules):
+        print("\nRULES:")
+        for rule in rules:
+            trigger = eval(rule[0])
+            print(rule[1], trigger)
+            if (trigger):
+                self.print_debug(rule[1])
+                self.twist = self.make_twist(rule[2], rule[3])
+                return
+
+
     def smart_lidar_cb(self, msg):
         self.shortest_bearing = self.degrees_norm(msg.shortest_bearing)
         self.shortest = msg.shortest
-        #self.delta_distance = msg.shortest - GOAL_DIST
-        #self.delta_bearing = GOAL_BEARING - msg.shortest_bearing
-        if self.danger_zone() and self.facing_away_from_wall():
-            self.print_debug("safe,  ")
-            self.twist = self.make_twist(SLOW_FORWARD, 0.0)
-        elif self.danger_zone() and not self.facing_away_from_wall():
-            self.print_debug("turnsaf,")
-            self.twist = self.make_twist(0.0, SLOW_ROTATION)
-        elif self.working_zone() and not self.parallel_wall():
-            self.print_debug("turnsaf2,")
-            self.twist = self.make_twist(0.0, SLOW_ROTATION)
-        elif self.working_zone() and self.parallel_wall():
-            self.print_debug("work,    ")
-            pid_turn = -self.pid.compute(GOAL_BEARING, self.shortest_bearing)
-            self.twist = self.make_twist(0.15, -pid_turn)
-        elif self.far_zone() and self.facing_wall():
-            self.print_debug("work ret,")
-            self.twist = self.make_twist(SLOW_FORWARD, 0.0)
-        elif self.far_zone():
-            self.print_debug("prep ret,")
-            self.twist = self.make_twist(0.0, SLOW_ROTATION)
-        else:
-            self.print_debug("error,   ")
+        self.delta_distance = msg.shortest - GOAL_DIST
+        self.delta_bearing = GOAL_BEARING - msg.shortest_bearing
+        print(self.shortest_bearing)
+
+        the_rules = [
+            ["self.far_zone() and self.facing_away_from_wall()", "far and facing away", 0, SLOW_ROTATION],
+            ["self.far_zone()", "far", SLOW_FORWARD, 0],
+            ["self.working_zone() and not self.parallel_wall()", "working but not parallel", 0.0, SLOW_ROTATION],
+            ["self.working_zone()", "working zone", SLOW_FORWARD, 0.0],
+            ["self.danger_zone() and abs(self.shortest_bearing) < 45", "danger zone and facing wall", -SLOW_FORWARD, 0.0],
+            ["self.danger_zone()", "danger zone and facing away from wall", SLOW_FORWARD, 0.0]
+        ]
+        self.process_rules(the_rules)
 
     def full_stop(self):
         self.twist = Twist()
@@ -136,10 +137,9 @@ class Roamer:
         sys.exit(0)
 
     def run(self):
-        rate = rospy.Rate(20)
+        rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             self.cmd_vel_pub.publish(self.twist)
-            # print(self.get_twist(self.twist))
             rate.sleep()
         self.full_stop()
 

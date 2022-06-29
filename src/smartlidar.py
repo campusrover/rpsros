@@ -22,6 +22,7 @@ class SmartLidar:
 
     GREEN = ColorRGBA(0, 1, 0, 1)
     RED = ColorRGBA(1, 0, 0, 1)
+    BLUE = ColorRGBA(0, 0, 1, 1)
     GREY = ColorRGBA(0.6, 0.6, 0.6, 1)
 
     def __init__(self):
@@ -35,8 +36,8 @@ class SmartLidar:
         print("\n**** Shutdown Requested ****")
 
     def invert_angle(self,angle):
-        # return (angle + pi) % (2 * pi)
-        return angle
+        return (angle + pi) % (2 * pi)
+        #return angle
 
     def wait_for_simulator(self):
         # Wait for the simulator to be ready. If simulator is not ready, then time will be stuck at zero
@@ -45,11 +46,11 @@ class SmartLidar:
 
     def marker_array_pub(self):
         mu = MarkerArrayUtils()
-        mu.add_marker(1, self.GREY, self.invert_angle(math.radians(self.FRONT_BEAR)), self.front_dist)
-        mu.add_marker(2, self.GREY, self.invert_angle(math.radians(self.LEFT_BEAR)), self.left_dist)
-        mu.add_marker(3, self.GREY, self.invert_angle(math.radians(self.RIGHT_BEAR)), self.right_dist)
+        mu.add_marker(1, self.RED, self.invert_angle(math.radians(self.FRONT_BEAR)), self.front_dist)
+        mu.add_marker(2, self.GREEN, self.invert_angle(math.radians(self.LEFT_BEAR)), self.left_dist)
+        mu.add_marker(3, self.BLUE, self.invert_angle(math.radians(self.RIGHT_BEAR)), self.right_dist)
         mu.add_marker(4, self.GREY, self.invert_angle(math.radians(self.REAR_BEAR)), self.rear_dist)
-        mu.add_marker(5, self.RED, self.invert_angle(self.near_bear), self.near_dist)
+        mu.add_marker(5, self.GREY, self.invert_angle(self.near_bear), self.near_dist)
         mu.publish()
 
     def filter(self, a, i):
@@ -71,7 +72,7 @@ class SmartLidar:
     # minirover's lidear (ydlidar X4) sends back 720 numbers per rotation hence the divide by two, 
     # gazebo sends back 360 numbers so it doesn't have to be divided by two. The calculation is to
     # make sure the resultant lidar_div is an integer.
-        lidar_div = int(ar.size/720.0 + 0.5)
+        lidar_div = 2 if ar.size == 719 else 1
         try:
             self.near_bear = np.nanargmin(np.around(filter_and_average, decimals=2))
             self.near_dist = filter_and_average[self.near_bear]
