@@ -32,28 +32,29 @@ while not rospy.is_shutdown() and current_pose.x < 1.5:
     move = Twist()
     move.linear.x = 0.2
     move.angular.z = 0
-    movement_pub.publish(move)
+    #movement_pub.publish(move)
+    rospy.loginfo(current_pose)
     rate.sleep()
-rospy.loginfo("turn right")
-start_turn = rospy.Time.now()
-while not rospy.is_shutdown() and current_pose.theta > -pi:
-    move = Twist()
-    move.linear.x = 0
-    move.angular.z = 0.3
-    movement_pub.publish(move)
-    rospy.spinonce()
-    rate.sleep()
-while not rospy.is_shutdown() and current_pose.x > -1.5:
-    move = Twist()
-    move.linear.x = 0.2
-    move.angular.z = 0
-    movement_pub.publish(move)
-    rospy.spinonce()
-    rate.sleep()
-while not rospy.is_shutdown():
-    move = Twist()
-    move.linear.x = 0
-    move.angular.z = 0
-    movement_pub.publish(move)
-    rospy.spinonce()
-    rate.sleep()
+# rospy.loginfo("turn right")
+# start_turn = rospy.Time.now()
+# while not rospy.is_shutdown() and current_pose.theta > -pi:
+#     move = Twist()
+#     move.linear.x = 0
+#     move.angular.z = 0.3
+#     movement_pub.publish(move)
+#     rospy.spinonce()
+#     rate.sleep()
+# while not rospy.is_shutdown() and current_pose.x > -1.5:
+#     move = Twist()
+#     move.linear.x = 0.2
+#     move.angular.z = 0
+#     movement_pub.publish(move)
+#     rospy.spinonce()
+#     rate.sleep()
+# while not rospy.is_shutdown():
+#     move = Twist()
+#     move.linear.x = 0
+#     move.angular.z = 0
+#     movement_pub.publish(move)
+#     rospy.spinonce()
+#     rate.sleep()
