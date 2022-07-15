@@ -21,7 +21,7 @@ def odom_cb(msg):
 # Initialize this program as a node
 rospy.loginfo("init")
 rospy.init_node("line")
-signal.signal(signal.SIGINT, self.shutdown)
+#signal.signal(signal.SIGINT, shutdown)
 odom_sub = rospy.Subscriber("/odom", Odometry, odom_cb)
 movement_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
 pose_pub = rospy.Publisher("/pose", Pose2D, queue_size=1)
