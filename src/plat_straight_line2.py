@@ -10,6 +10,11 @@ from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from math import pi, sqrt, atan2, isclose
 from scipy.spatial import distance
+import basenode2
+
+class StraightLine(basenode.BaseNode):
+    
+
 
 initial_pose = None
 current_pose = Pose2D()
@@ -37,7 +42,7 @@ def odom_cb(msg):
 # Initialize this program as a node
 rospy.loginfo("init")
 rospy.init_node("line")
-#signal.signal(signal.SIGINT, shutdown)
+# signal.signal(signal.SIGINT, self.shutdown)
 odom_sub = rospy.Subscriber("/odom", Odometry, odom_cb)
 movement_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
 pose_pub = rospy.Publisher("/pose", Pose2D, queue_size=1)
