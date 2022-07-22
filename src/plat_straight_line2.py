@@ -16,16 +16,15 @@ import bru_utils as bu
 class StraightLine(basenode2.BaseNode.BaseNode):
 
     def __init__(self):
-         super().__init__()
-         self.initial_pose : Pose2D
-         initial_pose: Pose2D
-    current_pose: Pose2D
-    dist: float
-    odom_sub: rospy.Subscriber
-    movement_pub: rospy.Publisher
-    pose_pub: rospy.Publisher
-    start: rospy.Time
-    state: str
+        super().__init__()
+        self.initial_pose : Pose2D
+        self.current_pose: Pose2D
+        self.dist: float
+        self.odom_sub: rospy.Subscriber
+        self.movement_pub: rospy.Publisher
+        self.pose_pub: rospy.Publisher
+        self.start: rospy.Time
+        self.state: str
 
     def odom_cb(self, msg):
         self.current_pose.x, self.current_pose.y = msg.pose.pose.position.x, msg.pose.pose.position.y
@@ -37,7 +36,7 @@ class StraightLine(basenode2.BaseNode.BaseNode):
         self.pose_pub.publish(self.current_pose)
     
     def initial_setup(self):
-        rospy.loginfo("init")
+        super().initial_setup()
         rospy.init_node("line")
         self.odom_sub = rospy.Subscriber("/odom", Odometry, self.odom_cb)
         self.movement_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
@@ -47,7 +46,7 @@ class StraightLine(basenode2.BaseNode.BaseNode):
         self.dist = 0.0
         self.current_pose = Pose2D()
         self.initial_pose = None
-        rospy.loginfo("move forward")
+        bu.info("move forward")
 
     def drive_straight_line(self, arrived) ->  None:
         twist = Twist()
@@ -73,10 +72,12 @@ class StraightLine(basenode2.BaseNode.BaseNode):
         self.rate.sleep()
 
     def stop(self) -> None:
+        super().stop()
         twist = Twist()
         self.movement_pub.publish(twist)
 
     def loop(self):
+        super().loop()
         for i in range(1):
             bu.info("out")
             self.drive_straight_line(lambda d: d >= 0.5)
@@ -85,3 +86,6 @@ class StraightLine(basenode2.BaseNode.BaseNode):
             bu.info = "return"
             self.drive_straight_line(lambda d: d <= 0.0)
         self.stop()
+
+
+    

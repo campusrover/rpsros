@@ -21,8 +21,8 @@ class BaseBehavior(py_trees.behaviour.Behaviour):
             return angle-2*pi
 
     def angle_dif(self, actual, desired):
-        """Given an actual and desired angle in radians, return a positive or 
-        negative radian result indicating the angle to turn to bring the angle
+        """Given an actual and desired angle in degrees, return a positive or 
+        negative degrees result indicating the angle to turn to bring the angle
         to the desired"""
 
         diff = actual - desired

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 import rospy
+from bru_utils import *
 
 class BaseNode:
 
     def __init__(self):
-        self.hertz = 4
-        self.shutdown_requested = False        
-        self.rate: rospy.Rate(self.hertz)
+        self.hertz :int = 4
+        self.shutdown_requested : bool = False        
 
     def wait_for_simulator(self):
         # Wait for the simulator to be ready. If simulator is not ready, then time will be stuck at zero
@@ -19,7 +19,7 @@ class BaseNode:
 
     def shutdown_hook(self):
         self.shutdown_requested = True
-        print("\n**** Shutdown Requested ****")
+        info("\n**** Shutdown Requested ****")
         self.stop()
 
     def loop(self):
