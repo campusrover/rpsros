@@ -14,7 +14,11 @@ import basenode2
 import bru_utils as bu
 
 class StraightLine(basenode2.BaseNode.BaseNode):
-    initial_pose: Pose2D
+
+    def __init__(self):
+         super().__init__()
+         self.initial_pose : Pose2D
+         initial_pose: Pose2D
     current_pose: Pose2D
     dist: float
     odom_sub: rospy.Subscriber

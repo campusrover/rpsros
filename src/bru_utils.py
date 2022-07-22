@@ -24,7 +24,6 @@ def info(msg: str):
     rospy.loginfo(msg)
 
 # Very simpl(istic) and easy to understand PID implementation
-
 class PID():
     def __init__(self, min_val, max_val, kp, ki, kd):
         self.min_val = min_val

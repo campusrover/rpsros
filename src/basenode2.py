@@ -2,10 +2,12 @@
 
 import rospy
 
-class BaseNode(Object):
-    rate: rospy.Rate
-    hertz: int = 10
-    shutdown_requested: bool = False
+class BaseNode:
+
+    def __init__(self):
+        self.hertz = 4
+        self.shutdown_requested = False        
+        self.rate: rospy.Rate(self.hertz)
 
     def wait_for_simulator(self):
         # Wait for the simulator to be ready. If simulator is not ready, then time will be stuck at zero
