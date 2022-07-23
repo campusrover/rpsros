@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
-from bru_utils import *
+import bru_utils as bu
 
 class BaseNode:
 
@@ -19,7 +19,7 @@ class BaseNode:
 
     def shutdown_hook(self):
         self.shutdown_requested = True
-        info("\n**** Shutdown Requested ****")
+        bu.info("Shutdown Requested")
         self.stop()
 
     def loop(self):
@@ -29,12 +29,16 @@ class BaseNode:
         pass
 
     def run(self):
-        self.rate = rospy.Rate(self.hertz)
-        self.initial_setup()
-        while not rospy.is_shutdown() and not self.shutdown_requested:
-            self.loop()
-            self.rate.sleep()
-        self.stop()
+        try:
+            self.rate = rospy.Rate(self.hertz)
+            self.initial_setup()
+            while not rospy.is_shutdown() and not self.shutdown_requested:
+                self.loop()
+                self.rate.sleep()
+        except rospy.exceptions.ROSInterruptException:
+            bu.info("exiting...")
+        except:
+            bu.info("Uncaught exception")
         
 if __name__ == '__main__':
     rn = BaseNode()
