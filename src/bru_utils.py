@@ -21,7 +21,7 @@ def invert_angle(angle: float) -> float:
     return (angle + pi) % (pi)
 
 def offset_point(point: Pose2D, distance: float) -> Pose2D:
-    pass
+    return True
 
 # Logging and   debugging  functions
 def info(msg: str):

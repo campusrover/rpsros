@@ -50,6 +50,7 @@ class StraightLine(BaseNode):
 
     def drive_straight_line(self, arrived) ->  None:
         bu.info("straight driving")
+        bu.info()
         twist = Twist()
         twist.linear.x = 0.3
         twist.angular.z = 0.0
