@@ -1,23 +1,22 @@
 #!/usr/bin/env python3
 
-from typing import Callable
-import rospy
-import tf2_ros
 import signal
+import rospy
 import copy
+from typing import Callable
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Pose2D
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
-from math import pi, sqrt, atan2, isclose
+from math import sqrt, atan2, isclose
 from basenode2 import BaseNode
 import bru_utils as bu
 
-class StraightLine(BaseNode):
 
+class StraightLine(BaseNode):
     def __init__(self):
         super().__init__()
-        self.initial_pose : Pose2D
+        self.initial_pose: Pose2D
         self.current_pose: Pose2D
         self.dist_trav: float
         self.odom_sub: rospy.Subscriber
@@ -26,17 +25,27 @@ class StraightLine(BaseNode):
         self.start: rospy.Time
         self.state: str
 
-    def log(self):
-        bu.info(f"curr:{self.current_pose.x:1.2},{self.current_pose.y:1.2}")
+    def log(self, label: str):
+        bu.info(f"{label}:{self.current_pose.x:1.2},{self.current_pose.y:1.2}")
 
     def odom_cb(self, msg):
-        self.current_pose.x, self.current_pose.y = msg.pose.pose.position.x, msg.pose.pose.position.y
-        roll, pitch, self.current_pose.theta = euler_from_quaternion([msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w])
+        self.current_pose.x, self.current_pose.y = (
+            msg.pose.pose.position.x,
+            msg.pose.pose.position.y,
+        )
+        _, _, self.current_pose.theta = euler_from_quaternion(
+            [
+                msg.pose.pose.orientation.x,
+                msg.pose.pose.orientation.y,
+                msg.pose.pose.orientation.z,
+                msg.pose.pose.orientation.w,
+            ]
+        )
         if self.initial_pose is None:
             self.initial_pose = copy.copy(self.current_pose)
         self.dist = bu.calc_distance(self.current_pose, self.initial_pose)
         self.pose_pub.publish(self.current_pose)
-    
+
     def initial_setup(self):
         super().initial_setup()
         self.odom_sub = rospy.Subscriber("/odom", Odometry, self.odom_cb)
@@ -48,14 +57,14 @@ class StraightLine(BaseNode):
         self.current_pose = Pose2D()
         self.initial_pose = None
 
-    def drive_straight_line(self, arrived) ->  None:
+    def drive_straight_line(self, arrived) -> None:
         bu.info("straight driving")
         twist = Twist()
         twist.linear.x = 0.5
         twist.angular.z = 0.0
         self.rate.sleep()
         while not arrived(self.dist):
-            self.log()
+            self.log("fwd")
             self.movement_pub.publish(twist)
             self.rate.sleep()
         twist.linear.x = 0.0
@@ -83,14 +92,15 @@ class StraightLine(BaseNode):
         for i in range(1):
             self.drive_straight_line(lambda d: d >= 0.5)
             target_theta = bu.invert_angle(self.current_pose.theta)
-            self.turn_by_radians(lambda d: isclose(target_theta, self.current_pose.theta, abs_tol=0.2))
+            self.turn_by_radians(
+                lambda d: isclose(target_theta, self.current_pose.theta, abs_tol=0.2)
+            )
             self.drive_straight_line(lambda d: d <= 0.0)
         self.stop()
 
 
-if __name__ == '__main__':
-    rospy.init_node('plat_straight_line2')
+if __name__ == "__main__":
+    rospy.init_node("plat_straight_line2")
     rn = StraightLine()
     rospy.on_shutdown(rn.shutdown_hook)
     rn.run()
-
