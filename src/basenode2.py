@@ -37,9 +37,7 @@ class BaseNode:
                 self.rate.sleep()
         except rospy.exceptions.ROSInterruptException:
             bu.info("exiting...")
-        except:
-            bu.info("Uncaught exception")
-        
+
 if __name__ == '__main__':
     rn = BaseNode()
     rospy.on_shutdown(rn.shutdown_hook)

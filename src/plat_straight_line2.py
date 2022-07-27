@@ -18,7 +18,7 @@ class StraightLine(BaseNode):
         super().__init__()
         self.initial_pose: Pose2D
         self.current_pose: Pose2D
-        self.dist_trav: float
+        self.dist: float = 0.0
         self.odom_sub: rospy.Subscriber
         self.movement_pub: rospy.Publisher = None
         self.pose_pub: rospy.Publisher = None
@@ -59,8 +59,9 @@ class StraightLine(BaseNode):
 
     def drive_straight_line(self, arrived) -> None:
         bu.info("straight driving")
+        bu.info()
         twist = Twist()
-        twist.linear.x = 0.5
+        twist.linear.x = 0.3
         twist.angular.z = 0.0
         self.rate.sleep()
         while not arrived(self.dist):
@@ -71,16 +72,32 @@ class StraightLine(BaseNode):
         self.movement_pub.publish(twist)
         self.rate.sleep()
 
-    def turn_by_radians(self, arrived) -> None:
+    def turn_by_radians(self, arrived: float) -> None:
         bu.info("turning")
         twist = Twist()
         twist.linear.x = 0.0
         twist.angular.z = 0.5
         while not arrived(self.current_pose.theta) and not self.shutdown_requested:
+            self.log("rotate")
             self.movement_pub.publish(twist)
             self.rate.sleep()
         self.movement_pub.publish(twist)
         self.rate.sleep()
+
+    def drive_to(self, goal_pose: Pose2D):
+        pid_linear = bu.PID(-0.5, 0.5, 0.4, 0, 0)
+        pid_angular = bu.PID(-0.5, 0.5, 0.4, 0, 0)
+        starting_pose : Pose2D = self.current_pose
+        twist = Twist()
+        while True:
+            linear_distance = bu.calc_distance(starting_pose, goal_pose)
+            angular_offset = goal_pose.theta - self.current_pose
+            twist.linear.x = pid_linear.compute(0, linear_distance)
+            twist.angular.z = pid_angular.compute(0, angular_offset)
+            if isclose(twist.linear.x, 0, abs_tol=0.1) and isclose(twist.angular.z, 0, abs_tol=0.1):
+                break
+            self.movement_pub.publish(twist)
+            self.rate.sleep()
 
     def stop(self) -> None:
         super().stop()
@@ -89,13 +106,12 @@ class StraightLine(BaseNode):
 
     def loop(self):
         super().loop()
-        for i in range(1):
-            self.drive_straight_line(lambda d: d >= 0.5)
+        for _ in range(1):
+            self.drive_to(bu.offset_point(self.current_pose, 1.0))
             target_theta = bu.invert_angle(self.current_pose.theta)
-            self.turn_by_radians(
-                lambda d: isclose(target_theta, self.current_pose.theta, abs_tol=0.2)
-            )
-            self.drive_straight_line(lambda d: d <= 0.0)
+            self.turn_by_radians(lambda d: isclose(target_theta, self.current_pose.theta, abs_tol=0.4))
+            self.initial_pose = copy.copy(self.current_pose)
+            self.drive_straight_line(lambda d: d >= 1.0)
         self.stop()
 
 
