@@ -6,7 +6,7 @@ import bru_utils as bu
 class BaseNode:
 
     def __init__(self):
-        self.hertz :int = 4
+        self.hertz :int = 15
         self.shutdown_requested : bool = False        
 
     def wait_for_simulator(self):
