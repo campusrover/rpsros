@@ -113,7 +113,7 @@ class StraightLine(BaseNode):
             self.rate.sleep()
 
 
-def drive_to_0(self, goal_pose: Pose2D):
+    def drive_to_0(self, goal_pose: Pose2D):
         pid_linear = bu.PID(-0.5, 0.5, -0.4, 0.0, 0)
         pid_angular = bu.PID(-0.5, 0.5, -0.4, 0, 0)
         starting_pose : Pose2D = self.current_pose
