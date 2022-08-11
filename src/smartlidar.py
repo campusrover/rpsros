@@ -13,6 +13,12 @@ from geometry_msgs.msg import Twist
 
 DEBUG = 0
 
+"""Analyze information coming from lidar (/scan) and calculate some higher level metrics
+
+Note: all angles are in degrees. Forward is 0 and counterclockwise, 90 is Left, 180 is Backwards. 270 is Right,
+and 359 is forward again
+"""
+
 class SmartLidar:
 
     FRONT_BEAR=0
