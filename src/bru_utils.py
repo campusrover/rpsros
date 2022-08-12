@@ -68,6 +68,14 @@ def pose_to_str(p: Pose2D):
     """Convert Pose fields to a string for debugging and logging"""
     return f"x:{p.x:1.2} y:{p.y:1.2} t:{p.theta:1.2}"
 
+# Control functions
+# Wait for the simulator to be ready. If simulator is not ready, then time will be stuck at zero
+
+def wait_for_simulator():
+        rate = rospy.Rate(5)
+        while rospy.Time.now().to_sec() == 0:
+            rate.sleep()
+
 
 # Very simpl(istic) and easy to understand PID implementation
 class PID:
