@@ -55,7 +55,7 @@ NEAR_COLOR = YELLOW
 
 class SmartLidar:
     def __init__(self):
-        self.hertz = 5
+        self.hertz = 10
         self.shutdown_requested = False
         self.rate = rospy.Rate(self.hertz)
 
@@ -103,16 +103,16 @@ class SmartLidar:
 
         # For Platform we map things because the lidar is mounted backwards
 
-        # self.front_dist = filter_and_average[FRONT_BEAR_A * lidar_div]
-        # self.right_dist = filter_and_average[RIGHT_BEAR_A * lidar_div]
-        # self.left_dist = filter_and_average[LEFT_BEAR_A * lidar_div]
-        # self.rear_dist = filter_and_average[REAR_BEAR_A * lidar_div]
+        self.front_dist = filter_and_average[FRONT_BEAR_A * lidar_div]
+        self.right_dist = filter_and_average[RIGHT_BEAR_A * lidar_div]
+        self.left_dist = filter_and_average[LEFT_BEAR_A * lidar_div]
+        self.rear_dist = filter_and_average[REAR_BEAR_A * lidar_div]
 
-        self.front_dist = filter_and_average[REAR_BEAR_A * lidar_div]
-        self.right_dist = filter_and_average[LEFT_BEAR_A * lidar_div]
-        self.left_dist = filter_and_average[RIGHT_BEAR_A * lidar_div]
-        self.rear_dist = filter_and_average[FRONT_BEAR_A * lidar_div]
-        self.near_bear = bu.invert_angle(self.near_bear)
+        # self.front_dist = filter_and_average[REAR_BEAR_A * lidar_div]
+        # self.right_dist = filter_and_average[LEFT_BEAR_A * lidar_div]
+        # self.left_dist = filter_and_average[RIGHT_BEAR_A * lidar_div]
+        # self.rear_dist = filter_and_average[FRONT_BEAR_A * lidar_div]
+        # self.near_bear = bu.invert_angle(self.near_bear)
 
         if DEBUG:
             print(

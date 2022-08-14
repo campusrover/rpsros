@@ -6,10 +6,16 @@ from std_msgs.msg import ColorRGBA
 from tf.transformations import quaternion_from_euler
 import math
 
+# TF for laert scanner
+#LASERT_SCAN_TF="scan_link"
+LASERT_SCAN_TF="base_scan"
+
 class MarkerArrayUtils:
     def __init__(self):
         self.marker_publisher = rospy.Publisher('/kalman/marker', MarkerArray, queue_size=10)
         self.marker_message = MarkerArray()
+        rospy.loginfo("rivzmarkerarray: tf is base_scan")
+
 
     def publish(self):
         self.marker_publisher.publish(self.marker_message)
@@ -18,7 +24,7 @@ class MarkerArrayUtils:
     def add_marker(self, id, color, bearing, distance):
         m = Marker()
         # m.header.frame_id = "base_scan"
-        m.header.frame_id = "scan_link"
+        m.header.frame_id = LASERT_SCAN_TF
         m.id = id
         m.header.stamp = rospy.get_rostime()
         m.type = m.ARROW
