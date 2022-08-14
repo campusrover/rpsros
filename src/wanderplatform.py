@@ -34,13 +34,13 @@ class WanderPlatform(BaseNode):
     
     def turn(self):
         twist = Twist()
-        twist.linear.x = 0.0
+        twist.linear.x = -0.05
         twist.angular.z = 0.3
         self.movement_pub.publish(twist)
     
     def update_state(self):
-        self.log(f"{self.shortest:1.2} {self.shortest_bearing:1.2}")
-        if 0.3 < self.shortest < 0.6 and abs(self.shortest_bearing) < (pi / 3):
+        self.log(f"{self.state}: short: {self.shortest:1.2} bearing: {self.shortest_bearing:1.2}")
+        if self.shortest < 0.9 and abs(self.shortest_bearing) < (pi / 2):
             self.state = "turn"
         else:
             self.state = "forward"

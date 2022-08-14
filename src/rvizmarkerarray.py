@@ -14,7 +14,6 @@ class MarkerArrayUtils:
     def __init__(self):
         self.marker_publisher = rospy.Publisher('/kalman/marker', MarkerArray, queue_size=10)
         self.marker_message = MarkerArray()
-        rospy.loginfo("rivzmarkerarray: tf is base_scan")
 
 
     def publish(self):
