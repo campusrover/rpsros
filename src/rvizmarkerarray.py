@@ -21,6 +21,8 @@ class MarkerArrayUtils:
         self.marker_message = MarkerArray()
 
     def add_marker(self, id, color, bearing, distance):
+        if math.isnan(bearing) or math.isnan(distance):
+            return
         m = Marker()
         m.header.frame_id = LASER_SCAN_TF
         m.id = id

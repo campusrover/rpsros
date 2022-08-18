@@ -106,13 +106,13 @@ class SmartLidar:
         self.right_dist = filter_and_average[RIGHT_BEAR_A * lidar_div]
         self.left_dist = filter_and_average[LEFT_BEAR_A * lidar_div]
         self.rear_dist = filter_and_average[REAR_BEAR_A * lidar_div]
+        self.near_bear = bu.normalize_angle(self.near_bear)
 
         # self.front_dist = filter_and_average[REAR_BEAR_A * lidar_div]
         # self.right_dist = filter_and_average[LEFT_BEAR_A * lidar_div]
         # self.left_dist = filter_and_average[RIGHT_BEAR_A * lidar_div]
         # self.rear_dist = filter_and_average[FRONT_BEAR_A * lidar_div]
         # self.near_bear = bu.invert_angle(self.near_bear)
-
         if DEBUG:
             print(
                 "smartlidar nearest: %.2f bearing: %.3f front: %.3f left: %.3f rear: %.3f right: %.3f "
