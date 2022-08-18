@@ -5,7 +5,6 @@ from rpsexamples.msg import Sensor
 from sensor_msgs.msg import LaserScan
 import numpy as np
 import math
-from strollerkalman import kalman_predict, kalman_update
 from math import pi
 from rvizmarkerarray import MarkerArrayUtils
 from std_msgs.msg import ColorRGBA
@@ -37,7 +36,7 @@ RIGHT_BEAR_A = 270
 REAR_BEAR_A = 180
 
 MIN_LIDAR_DISTANCE = 0.3  # ignore Lidar reported distances less than this
-INVALID_DISTANCE = 0  # use this value instead of an invalid or ignored distance
+INVALID_DISTANCE = np.NAN  # use this value instead of an invalid or ignored distance
 AVE_SLICE = 60 # Each reading is an average of readings +/- AVE_SLICE/2 degrees
 
 GREEN = ColorRGBA(0, 1, 0, 1)
@@ -103,16 +102,16 @@ class SmartLidar:
 
         # For Platform we map things because the lidar is mounted backwards
 
-        # self.front_dist = filter_and_average[FRONT_BEAR_A * lidar_div]
-        # self.right_dist = filter_and_average[RIGHT_BEAR_A * lidar_div]
-        # self.left_dist = filter_and_average[LEFT_BEAR_A * lidar_div]
-        # self.rear_dist = filter_and_average[REAR_BEAR_A * lidar_div]
+        self.front_dist = filter_and_average[FRONT_BEAR_A * lidar_div]
+        self.right_dist = filter_and_average[RIGHT_BEAR_A * lidar_div]
+        self.left_dist = filter_and_average[LEFT_BEAR_A * lidar_div]
+        self.rear_dist = filter_and_average[REAR_BEAR_A * lidar_div]
 
-        self.front_dist = filter_and_average[REAR_BEAR_A * lidar_div]
-        self.right_dist = filter_and_average[LEFT_BEAR_A * lidar_div]
-        self.left_dist = filter_and_average[RIGHT_BEAR_A * lidar_div]
-        self.rear_dist = filter_and_average[FRONT_BEAR_A * lidar_div]
-        self.near_bear = bu.invert_angle(self.near_bear)
+        # self.front_dist = filter_and_average[REAR_BEAR_A * lidar_div]
+        # self.right_dist = filter_and_average[LEFT_BEAR_A * lidar_div]
+        # self.left_dist = filter_and_average[RIGHT_BEAR_A * lidar_div]
+        # self.rear_dist = filter_and_average[FRONT_BEAR_A * lidar_div]
+        # self.near_bear = bu.invert_angle(self.near_bear)
 
         if DEBUG:
             print(
@@ -127,15 +126,8 @@ class SmartLidar:
                 )
             )
 
-    def cmd_vel_callback(self, msg):
-        """Whenever there's a new command for motion this will be incorporated, using the Kalman FIlter
-        into the estimated nearest bearing and distance"""
-        self.forward_cmd = msg.linear.x
-        self.turn_cmd = msg.angular.z
-
     def pre_loop(self):
         self.sensor_pub = rospy.Publisher("/sensor", Sensor, queue_size=10)
-        self.cmd_vel_sub = rospy.Subscriber("/cmd_vel", Twist, self.cmd_vel_callback)
         self.scan_sub = rospy.Subscriber("/scan", LaserScan, self.scan_callback)
         bu.wait_for_simulator()
         self.time_now = rospy.Time()
@@ -148,14 +140,6 @@ class SmartLidar:
         self.state_bear = math.radians(0)
 
     def loop(self):
-        elapsed = rospy.Time.now().to_sec() - self.time_now.to_sec()
-        control_motion = self.forward_cmd * elapsed
-        state_dist_temp, state_bear_temp = kalman_predict(
-            self.state_dist, self.state_bear, control_motion
-        )
-        self.state_dist, self.state_bear = kalman_update(
-            0.4, state_dist_temp, state_bear_temp, self.near_dist, self.near_bear
-        )
         sensor_msg = Sensor(
             self.front_dist,
             self.left_dist,

@@ -7,6 +7,9 @@ import bru_utils as bu
 from geometry_msgs.msg import Twist
 from math import pi, radians
 
+FORWARD_LINEAR_SPEED = 0.2
+TURN_LINEAR_SPEED = -0.02
+TURN_ANGULAR_SPEED = 0.15
 
 
 class WanderPlatform(BaseNode):
@@ -28,23 +31,40 @@ class WanderPlatform(BaseNode):
 
     def forward(self):
         twist = Twist()
-        twist.linear.x = 0.2
+        twist.linear.x = FORWARD_LINEAR_SPEED
         twist.angular.z = 0.0
         self.movement_pub.publish(twist)
     
     def turn(self):
         twist = Twist()
-        twist.linear.x = -0.05
-        twist.angular.z = 0.3
+        twist.linear.x = TURN_LINEAR_SPEED
+        twist.angular.z = TURN_ANGULAR_SPEED
         self.movement_pub.publish(twist)
     
     def update_state(self):
-        self.log(f"{self.state}: short: {self.shortest:1.2} bearing: {self.shortest_bearing:1.2}")
-        if self.shortest < 0.9 and abs(self.shortest_bearing) < (pi / 2):
-            self.state = "turn"
-        else:
+        self.log(f"STATE: {self.state}: short: {self.shortest:1.2} bearing: {self.shortest_bearing:1.2}")
+    # no obstacles nearby
+        if self.shortest > 0.6:
             self.state = "forward"
+    # obstacles "behind"
+        elif self.shortest < 0.4 and abs(self.shortest_bearing) > (pi / 2):
+            self.state = "forward"
+    # obstacles "ahead"
+        elif self.shortest < 0.4 and abs(self.shortest_bearing) <= (pi / 2):
+            self.state = "turn"
+    # obstacles behind and to the left
+        elif self.shortest < 0.4 and pi/2.0 < self.shortest_bearing < pi:
+            self.state = "slow forward right"
+    # obstacles behind and to the right
+        elif self.shortest < 0.4 and -pi < self.shortest_bearing < - pi / 2.0:
+            self.state = "slow forward left"
 
+    # obstacle ahead and to the left
+    # onstacle ahead and to the right
+    
+    # case 4: "impossible"
+        else:
+            self.state = "error"
 
     def loop(self):
         super().loop()
