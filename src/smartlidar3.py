@@ -37,7 +37,7 @@ REAR_BEAR_A = 180
 
 MIN_LIDAR_DISTANCE = 0.3  # ignore Lidar reported distances less than this
 INVALID_DISTANCE = np.NAN  # use this value instead of an invalid or ignored distance
-AVE_SLICE = 60 # Each reading is an average of readings +/- AVE_SLICE/2 degrees
+AVE_SLICE = 15 # Each reading is an average of readings +/- AVE_SLICE/2 degrees
 
 GREEN = ColorRGBA(0, 1, 0, 1)
 RED = ColorRGBA(1, 0, 0, 1)
