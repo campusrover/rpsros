@@ -14,10 +14,10 @@ RING2 = 2.0
 RING0 = 0.5
 
 
-FAST_LINEAR_SPEED = 0.2
-SLOW_LINEAR_SPEED = 0.1
-FAST_ANGULAR_SPEED = 0.15
-SLOW_ANGULAR_SPEED = 0.1
+FAST_LINEAR_SPEED = 0.3
+SLOW_LINEAR_SPEED = 0.05
+FAST_ANGULAR_SPEED = 0.2
+SLOW_ANGULAR_SPEED = 0.15
 
 
 class WanderPlatform(BaseNode):
@@ -86,11 +86,11 @@ class WanderPlatform(BaseNode):
         elif self.CLOSE_FL():
             self.state = "CLOSE_FL"
             twist.linear.x = -SLOW_LINEAR_SPEED
-            twist.angular.z = FAST_ANGULAR_SPEED
+            twist.angular.z = -FAST_ANGULAR_SPEED
         elif self.CLOSE_FR():
             self.state = "CLOSE_FR"
             twist.linear.x = -SLOW_LINEAR_SPEED
-            twist.angular.z = -FAST_ANGULAR_SPEED
+            twist.angular.z = FAST_ANGULAR_SPEED
         elif self.MID():
             self.state = "MID"
             twist.linear.x = SLOW_LINEAR_SPEED

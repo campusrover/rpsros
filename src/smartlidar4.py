@@ -10,6 +10,7 @@ from rvizmarkerarray import MarkerArrayUtils
 from std_msgs.msg import ColorRGBA
 from geometry_msgs.msg import Twist
 import bru_utils as bu
+from collections import deque
 
 
 """Analyze information coming from lidar (/scan) and calculate some higher level metrics
@@ -57,6 +58,7 @@ class SmartLidar:
         self.hertz = 20
         self.shutdown_requested = False
         self.rate = rospy.Rate(self.hertz)
+        self.circ_buf = deque(maxlen=5)
 
     def shutdown_hook(self):
         self.shutdown_requested = True
@@ -104,11 +106,21 @@ class SmartLidar:
 
         # For Platform we map things because the lidar is mounted backwards
 
-        self.front_dist = filter_and_average[FRONT_BEAR_A * lidar_div]
-        self.right_dist = filter_and_average[RIGHT_BEAR_A * lidar_div]
-        self.left_dist = filter_and_average[LEFT_BEAR_A * lidar_div]
-        self.rear_dist = filter_and_average[REAR_BEAR_A * lidar_div]
-        self.near_bear = bu.normalize_angle(self.near_bear)
+        next_entry = [0]*5
+        next_entry[0] = filter_and_average[FRONT_BEAR_A * lidar_div]
+        next_entry[1] = filter_and_average[RIGHT_BEAR_A * lidar_div]
+        next_entry[2] = filter_and_average[LEFT_BEAR_A * lidar_div]
+        next_entry[3] = filter_and_average[REAR_BEAR_A * lidar_div]
+        next_entry[4] = bu.normalize_angle(self.near_bear)
+
+        self.circ_buf.append(next_entry)
+        averaged_entry = np.nanmean(self.circ_buf, axis=0)
+        self.front_dist = averaged_entry[0]
+        self.right_dist = averaged_entry[1]
+        self.left_dist = averaged_entry[2]
+        self.rear_dist = averaged_entry[3]
+        self.near_bear = averaged_entry[4]
+
 
         # self.front_dist = filter_and_average[REAR_BEAR_A * lidar_div]
         # self.right_dist = filter_and_average[LEFT_BEAR_A * lidar_div]
