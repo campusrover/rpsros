@@ -70,9 +70,9 @@ def shutdown(sig, stackframe):
     sys.exit(0)
 
 # Initialize this program as a node
+rospy.init_node('outback')
 cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
 odom_sub = rospy.Subscriber('/odom', Odometry, odom_cb)
-rospy.init_node('outback')
 signal.signal(signal.SIGINT, shutdown)
 
 
