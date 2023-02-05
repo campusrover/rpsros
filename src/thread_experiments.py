@@ -15,18 +15,22 @@ def kill_time(power):
 def odom_cb(msg):
     global global_flag
     local_flag = global_flag+1
-    kill_time(1)
+    # kill_time(1)
+    time.sleep(0.5)
     print(f'odom_cb: L/G Flag: {local_flag}/{global_flag}, thread: {threading.get_ident()}')
     global_flag = local_flag-1
-    kill_time(1)
+    time.sleep(0.5)
+    # kill_time(1)
 
 def clock_cb(msg):
     global global_flag
     local_flag = global_flag+1
-    kill_time(6)
+    time.sleep(0.5)
+    # kill_time(6)
     print(f'clockcb: L/G Flag: {local_flag}/{global_flag}, thread: {threading.get_ident()}')
     global_flag = local_flag-1
-    kill_time(1)
+    time.sleep(0.5)
+    # kill_time(1)
 
 # Initialize this program as a node
 rospy.init_node('mini_odom_demo')
