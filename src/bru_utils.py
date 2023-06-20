@@ -68,6 +68,17 @@ def pose_to_str(p: Pose2D):
     """Convert Pose fields to a string for debugging and logging"""
     return f"x:{p.x:1.2} y:{p.y:1.2} t:{p.theta:1.2}"
 
+def turn_to_target(yaw, x0, y0, x1, y1):
+    """ Current position is x0, y0. Current orientation is angle yaw, where 0 is North and positive angles go counterclockwise. 
+    Target destination is x1, y1. Compute needed turn to point directly at x1, y1."""
+    delta_x = x1 - x0
+    delta_y = y1 - y0
+# Calculate the angle between the current orientation and the target point using the arctangent function: θ = atan2(Δy, Δx).
+    angle_to_target = math.atan2(delta_y, delta_x)
+# Calculate the angle difference between the target angle and the current angle: Δθ = θ - A.
+    turn_amount = angle_to_target - yaw
+    return turn_amount
+
 # Control functions
 # Wait for the simulator to be ready. If simulator is not ready, then time will be stuck at zero
 
