@@ -148,3 +148,10 @@ if __name__ == "__main__":
     pc = offset_point(C, 3.0)
     pd = Pose2D(4.621, -5.524, -1.0)
     assert poses_close(pc, pd)
+
+    rotation_cases = [[0, 0, 0, 1, 0, 0],
+                    [90, 0, 0, 1, 0, -90],
+                    [180, 0, 0, -1, 0, 0],
+                    [45, 0, 0, -1, 0, 135]]
+    for case in rotation_cases:
+        assert degrees(turn_to_target(radians(case[0]), case[1], case[2], case[3], case[4])) == case[5]
