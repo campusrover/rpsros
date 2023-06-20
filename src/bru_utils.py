@@ -4,7 +4,7 @@ import rospy
 from scipy.spatial import distance
 from geometry_msgs.msg import Pose2D
 import numpy as np
-from math import pi, sqrt, atan2, isclose, cos, sin
+from math import pi, sqrt, atan2, isclose, cos, sin, degrees, radians
 
 # Stand alone functions
 
@@ -83,6 +83,7 @@ def turn_to_target(yaw, x0, y0, x1, y1):
 # Wait for the simulator to be ready. If simulator is not ready, then time will be stuck at zero
 
 def wait_for_simulator():
+    """ When running with Gazebo, this method will sleep until it detects that Gazebo is up """
         rate = rospy.Rate(5)
         while rospy.Time.now().to_sec() == 0:
             rate.sleep()
