@@ -38,7 +38,6 @@ def normalize_angle(angle: float):
             angle_out = -2 * pi + angle_out
     return angle_out
 
-
 def poses_close(p1: Pose2D, p2: Pose2D) -> bool:
     """Returns true if two poses are close to each other and pointing in
     a similar direction (to be defined)"""
@@ -74,7 +73,7 @@ def turn_to_target(yaw, x0, y0, x1, y1):
     delta_x = x1 - x0
     delta_y = y1 - y0
 # Calculate the angle between the current orientation and the target point using the arctangent function: θ = atan2(Δy, Δx).
-    angle_to_target = math.atan2(delta_y, delta_x)
+    angle_to_target = atan2(delta_y, delta_x)
 # Calculate the angle difference between the target angle and the current angle: Δθ = θ - A.
     turn_amount = angle_to_target - yaw
     return turn_amount
@@ -84,9 +83,9 @@ def turn_to_target(yaw, x0, y0, x1, y1):
 
 def wait_for_simulator():
     """ When running with Gazebo, this method will sleep until it detects that Gazebo is up """
-        rate = rospy.Rate(5)
-        while rospy.Time.now().to_sec() == 0:
-            rate.sleep()
+    rate = rospy.Rate(5)
+    while rospy.Time.now().to_sec() == 0:
+        rate.sleep()
 
 
 # Very simpl(istic) and easy to understand PID implementation
