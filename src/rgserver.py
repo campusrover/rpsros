@@ -26,6 +26,7 @@ class RoboGym:
         self.required_turn_angle = turn_to_target(self.odom_pose.theta, self.odom_pose.x, self.odom_pose.y, self.target.x, self.target.y)
 
     def run(self):
+    # This can be improved by applying a sigmoid function.
         self.twist = Twist()
         self.rate = rospy.Rate(2)
         while not rospy.is_shutdown():
