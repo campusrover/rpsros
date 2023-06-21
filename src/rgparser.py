@@ -1,7 +1,9 @@
+from prompt_toolkit import PromptSession
+
 class CommandInterface:
     def __init__(self):
         # Initialize an empty dictionary to store variables and their values
-        self.variables = {}
+        self.variables = {"log": 1, "max_ang": 0.75, "max_lin": 0.5}
 
         # Define the command table
         self.command_table = {
@@ -35,6 +37,19 @@ class CommandInterface:
                 "description": "Quit the program",
                 "handler": self.quit,
             },
+            "stop": {
+                "args": [],
+                "description": "Stop the robot",
+                "handler": self.stop,
+            },
+            "goto": {
+                "args": ["<x>", "<y>"],
+                "description": "Go to given odometry coordinate",
+                "handler": self.goto,
+                "usage": "Invalid command. Usage: goto <x> <y>"
+            },
+
+
         }
 
     def get_value(self, token):
@@ -46,6 +61,9 @@ class CommandInterface:
             return float(token)
         except ValueError:
             return None
+
+    def invalid_command(self, command):
+        pass
 
     def reset(self, args):
         self.variables.clear()
@@ -102,36 +120,55 @@ class CommandInterface:
     def quit(self, args):
         return True, "Quitting the program...", "quit", {}
 
-    def get_command(self):
-        command_input = input(">> ").strip().split()
-        if len(command_input) > 0:
-            command = command_input[0]
-            args = command_input[1:]
-            return command, args
+    def stop(self, args):
+        return True, "Stop the robot", "stop", {}
+
+    def goto(self, args):
+        if len(args) == 2:
+            x = self.get_value(args[0])
+            y = self.get_value(args[1])
+            if x is not None and y is not None:
+                params = {"x": x, "y": y}
+                return True, f"Going to requested coordinates x: {x:2.2f}, y: {y:2.2f}", "goto", params
+            else:
+                return False, "Invalid values for x or y. Please correct", "goto", {}
         else:
-            return None, None
+            return False, "Invalid command. Usage: goto <x> <y>", "goto", {}
 
 
-# Create an instance of the CommandInterface class
-command_interface = CommandInterface()
+    def get_command(self):
+        while True:
+            try:
+                raw_input = self.session.prompt(">>> ")
+                command_input = raw_input.strip().split()
+                if len(command_input) > 0:
+                    command = command_input[0]
+                    args = command_input[1:]
+                    return command, args
+                else:
+                    return None, None
+            except KeyboardInterrupt:
+                continue
+        
+    def command(self):
+        self.session = PromptSession()
 
-while True:
-    command, args = command_interface.get_command()
-    if command is None:
-        continue
+        while True:
+            command, args = self.get_command()
+            if command is None:
+                continue
 
-    if command not in command_interface.command_table:
-        print("Invalid command. Type 'help' to see the available commands.")
-        continue
+            if command not in self.command_table:
+                print("Invalid command. Type 'help' to see the available commands.")
+                continue
 
-    # Execute the command
-    command_info = command_interface.command_table[command]
-    status, message, result, params = command_info["handler"](args)
-    if status:
-        print(message)
-        if result:
-            print("Command:", result)
-        if params:
-            print("Parameters:", params)
-    else:
-        print("Error:", message)
+            # Execute the command
+            self.command_info = self.command_table[command]
+            status, message, result, params = self.command_info["handler"](args)
+            values = {**params, **self.variables}
+            if status:
+                print(message)
+                if command in ("move", "stop", "goto", "quit", "exit"):
+                    return command, message, result, values
+            else:
+                print("Error:", message)

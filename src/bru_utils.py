@@ -4,7 +4,7 @@ import rospy
 from scipy.spatial import distance
 from geometry_msgs.msg import Pose2D
 import numpy as np
-from math import pi, sqrt, atan2, isclose, cos, sin, degrees, radians
+from math import pi, sqrt, atan2, isclose, cos, sin, degrees, radians, exp
 
 # Stand alone functions
 
@@ -111,6 +111,9 @@ class PID:
         # print(f"** PID {pid:1.2} {error:1.2} {r:1.2}")
         return np.clip(pid, self.min_val, self.max_val)
 
+def sigmoid(error, k, scale):
+    sig = 1 / (1 + exp(-k * error))
+    return sig * scale
 
 if __name__ == "__main__":
     print("test cases")
