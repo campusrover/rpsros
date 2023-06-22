@@ -3,7 +3,7 @@ from prompt_toolkit import PromptSession
 class CommandInterface:
     def __init__(self):
         # Initialize an empty dictionary to store variables and their values
-        self.variables = {"log": 1, "max_ang": 0.75, "max_lin": 0.5}
+        self.variables = {"log": 1, "max_ang": 0.75, "max_lin": 0.5, "target_lin": 1.0, "target_ang" : 0.75
 
         # Define the command table
         self.command_table = {

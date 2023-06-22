@@ -39,13 +39,13 @@ class RoboGym:
     def goto(self):
     # This can be improved by applying a sigmoid function.
         self.twist = Twist()
-        self.rate = rospy.Rate(2)
+        self.rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             distance = calc_distance(self.odom_pose, self.target)
-            abs_required_turn = abs(self.required_turn_angle)
+            abs_required_turn = abs(degrees(normalize_angle(self.required_turn_angle)))
             if  distance > 0.1:
-                sig_turn = sigmoid(abs_required_turn, 1, 0.75)
-                self.twist.linear.x = 0 if abs_required_turn > 0.3 else sigmoid(distance, 1, 0.5)
+                sig_turn = sigmoid(abs_required_turn, 0.5, rg.values["target_ang"])
+                self.twist.linear.x = 0 if abs_required_turn > 20 else sigmoid(distance, 0.5, rg.values["target_lin"])
                 self.twist.angular.z = sig_turn if normalize_angle(self.required_turn_angle) > 0 else -sig_turn
                 self.log(f"target: {self.target.x:2.2f}, {self.target.y:2.2f} curr: {self.odom_pose.x:2.2f} {self.odom_pose.y:2.2f})" +
                         f", dist: {distance:2.2f}, turn: {degrees(normalize_angle(self.required_turn_angle)):2.2f}" +
