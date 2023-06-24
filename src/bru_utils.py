@@ -115,6 +115,9 @@ def sigmoid(error, k, scale):
     sig = 1 / (1 + exp(-k * error))
     return sig * scale
 
+def speak(text):
+    pass
+
 if __name__ == "__main__":
     print("test cases")
     assert invert_angle(0) == pi

@@ -3,7 +3,7 @@
 import rospy
 from geometry_msgs.msg import Twist
 from std_msgs.msg import String
-from bru_utils import turn_to_target, wait_for_simulator, poses_close, calc_distance, normalize_angle, sigmoid
+from bru_utils import turn_to_target, wait_for_simulator, poses_close, calc_distance, normalize_angle, sigmoid, speak
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose2D
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
@@ -40,6 +40,7 @@ class RoboGym:
     # This can be improved by applying a sigmoid function.
         self.twist = Twist()
         self.rate = rospy.Rate(10)
+        speak("Commanded to goto")
         while not rospy.is_shutdown():
             distance = calc_distance(self.odom_pose, self.target)
             abs_required_turn = abs(degrees(normalize_angle(self.required_turn_angle)))
