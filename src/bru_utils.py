@@ -62,7 +62,6 @@ def info(msg: str):
     #rospy.loginfo(msg)
     print(msg)
 
-
 def pose_to_str(p: Pose2D):
     """Convert Pose fields to a string for debugging and logging"""
     return f"x:{p.x:1.2} y:{p.y:1.2} t:{p.theta:1.2}"
@@ -86,7 +85,6 @@ def wait_for_simulator():
     rate = rospy.Rate(5)
     while rospy.Time.now().to_sec() == 0:
         rate.sleep()
-
 
 # Very simpl(istic) and easy to understand PID implementation
 class PID:
@@ -114,9 +112,6 @@ class PID:
 def sigmoid(error, k, scale):
     sig = 1 / (1 + exp(-k * error))
     return sig * scale
-
-def speak(text):
-    pass
 
 if __name__ == "__main__":
     print("test cases")
