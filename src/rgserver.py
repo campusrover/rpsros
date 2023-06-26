@@ -8,7 +8,7 @@ from bru_utils import turn_to_target, wait_for_simulator, calc_distance, normali
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
 from rgparser import CommandInterface
-from rgmonitor import Monitor
+from rpsexamples.msg import Mon
 
 
 class RoboGym:
@@ -18,11 +18,11 @@ class RoboGym:
         self.target = Pose2D(1, 1, 0)
         self.odom_pose = Pose2D(0, 0, 0)
         self.required_turn_angle = 0
-        self.monitor = Monitor()
         self.twist = None
         self.distance = None
         self.values = None
         self.exit = False
+        self.mon_pub = rospy.Publisher("/monitor", Mon, queue_size=1)
 
     def log(self, msg: str):
         """print out log messages if the log variable is set to 1"""
@@ -53,7 +53,7 @@ class RoboGym:
         self.twist = Twist()
         self.target = Pose2D(self.values["x"], self.values["y"], 0)
         rate = rospy.Rate(10)
-        self.monitor.say("Commanded to goto")
+        self.mon_pub.publish(Mon("state", f"Goto odometry x,y {self.target.x} {self.target.y}"))
         while not rospy.is_shutdown():
             self.distance = calc_distance(self.odom_pose, self.target)
             abs_required_turn = abs(normalize_angle(self.required_turn_angle))
@@ -72,7 +72,7 @@ class RoboGym:
         """Stop the robot by setting the cmd_vel to all zeros"""
         self.twist = Twist()
         self.distance = 0
-        self.monitor.say("Commanded to stop")
+        self.mon_pub.publish(Mon("state", "Stop immediately"))
         self.safe_publish_cmd_vel()
 
     def move(self):
@@ -82,7 +82,7 @@ class RoboGym:
         forward_speed =  self.values["forward_speed"]
         self.distance = self.values["distance"]
         self.target = offset_point(self.odom_pose, self.distance)
-        self.monitor.say("Commanded to move")
+        self.mon_pub.publish(Mon("state", f"Move {self.distance:1.1} meters at {forward_speed:1.1} meters per second"))
         while not rospy.is_shutdown():
             self.distance = abs(calc_distance(self.odom_pose, self.target))
             if  self.distance > 0.5:
@@ -122,4 +122,3 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             rg.stop()
             print("Stopping Robot. Type Quit or Exit to leave")
-
