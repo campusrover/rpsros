@@ -1,9 +1,16 @@
+#!/usr/bin/env python3
+"""
+Package of very simple parsing used in Robogym and friends
+"""
 from prompt_toolkit import PromptSession
 
 class CommandInterface:
-    def __init__(self):
+    """General very simple parser for commands to rgserver"""
+    def __init__(self, initial_variables):
         # Initialize an empty dictionary to store variables and their values
-        self.variables = {"log": 1, "max_ang": 0.75, "max_lin": 0.5, "target_lin": 1.0, "target_ang" : 0.75}
+        self.variables = initial_variables
+        self.session = None
+        self.command_info = None
 
         # Define the command table
         self.command_table = {
@@ -53,6 +60,7 @@ class CommandInterface:
         }
 
     def get_value(self, token):
+        """Parse a value from a token. Either a word or a float"""
         # Check if the token is a variable name
         if token in self.variables:
             return float(self.variables[token])
@@ -65,7 +73,7 @@ class CommandInterface:
     def invalid_command(self, command):
         pass
 
-    def reset(self, args):
+    def reset(self):
         self.variables.clear()
         return True, "State has been reset.", "reset", {}
 
@@ -98,6 +106,7 @@ class CommandInterface:
             return False, "Invalid command. Usage: show or show <variable>", "show", {}
 
     def move(self, args):
+        """Parse the move command"""
         if len(args) == 2:
             forward_speed = self.get_value(args[0])
             distance = self.get_value(args[1])
@@ -113,14 +122,16 @@ class CommandInterface:
         else:
             return False, "Invalid command. Usage: move <forward_speed> <distance>", "move", {}
 
-    def print_commands(self, args):
+    def print_commands(self, _):
+        """Display all the commands we know about"""
+
         commands_info = "\n".join([f"- {command} {' '.join(info['args'])}: {info['description']}" for command, info in self.command_table.items()])
         return True, f"Available commands:\n{commands_info}", "help", {}
 
-    def quit(self, args):
+    def quit(self, _):
         return True, "Quitting the program...", "quit", {}
 
-    def stop(self, args):
+    def stop(self, _):
         return True, "Stop the robot", "stop", {}
 
     def goto(self, args):
@@ -155,9 +166,6 @@ class CommandInterface:
 
         while True:
             command, args = self.get_command()
-            if command is None:
-                continue
-
             if command not in self.command_table:
                 print("Invalid command. Type 'help' to see the available commands.")
                 continue

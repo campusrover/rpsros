@@ -52,6 +52,7 @@ find_package(catkin REQUIRED COMPONENTS
   FILES
   Sensor.msg
   Robogym.msg
+  Mon.msg
 #   Message1.msg
 #   Message2.msg
 )
