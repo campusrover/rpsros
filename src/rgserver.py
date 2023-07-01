@@ -7,11 +7,12 @@ from geometry_msgs.msg import Twist, Pose2D
 from bru_utils import turn_to_target, wait_for_simulator, calc_distance, normalize_angle, sigmoid, offset_point
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
-from rgparser import CommandInterface
+from rgparser import Parser
 from rpsexamples.msg import Mon
 
 
 class RoboGym:
+    """Contains all the actions for the rg command set."""
     def __init__(self):
         self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
         self.odom_sub = rospy.Subscriber('/odom', Odometry, self.odom_cb)
@@ -23,6 +24,14 @@ class RoboGym:
         self.values = None
         self.exit = False
         self.mon_pub = rospy.Publisher("/monitor", Mon, queue_size=1)
+
+    def odom_cb(self, msg: str):
+        """ROS callback for Odometry Message"""
+        oreuler = msg.pose.pose.orientation
+        _, _, yaw = euler_from_quaternion([oreuler.x, oreuler.y, oreuler.z, oreuler.w])
+        self.odom_pose = Pose2D(msg.pose.pose.position.x, msg.pose.pose.position.y, yaw)
+        self.required_turn_angle = turn_to_target(self.odom_pose.theta, self.odom_pose.x, self.odom_pose.y, self.target.x, self.target.y)
+
 
     def log(self, msg: str):
         """print out log messages if the log variable is set to 1"""
@@ -40,13 +49,6 @@ class RoboGym:
                 f", dist: {self.distance:2.2f}, turn: {degrees(normalize_angle(self.required_turn_angle)):2.2f}" +
                 f", lin: {self.twist.linear.x:2.2f}, ang: {self.twist.angular.z:2.2f}")
         self.cmd_vel_pub.publish(self.twist)
-
-    def odom_cb(self, msg: str):
-        """ROS callback for Odometry Message"""
-        oreuler = msg.pose.pose.orientation
-        _, _, yaw = euler_from_quaternion([oreuler.x, oreuler.y, oreuler.z, oreuler.w])
-        self.odom_pose = Pose2D(msg.pose.pose.position.x, msg.pose.pose.position.y, yaw)
-        self.required_turn_angle = turn_to_target(self.odom_pose.theta, self.odom_pose.x, self.odom_pose.y, self.target.x, self.target.y)
 
     def goto(self):
         """Make the robot move to a specific x y"""
@@ -105,7 +107,7 @@ if __name__ == "__main__":
     # Initialize the node and name it.
     rospy.init_node("robogym")
     wait_for_simulator()
-    cp = CommandInterface({"log": 1, "max_ang": 0.75, "max_lin": 0.5, "target_lin": 1.0, "target_ang" : 0.75})
+    cp = Parser({"log": 1, "max_ang": 0.75, "max_lin": 0.5, "target_lin": 1.0, "target_ang": 0.75, "r1" : "[[0,0],[1,1],[0,0]]"})
     rg = RoboGym()
     while not rospy.is_shutdown():
         try:
