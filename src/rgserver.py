@@ -10,6 +10,14 @@ from tf.transformations import euler_from_quaternion
 from rgparser import Parser
 from rpsexamples.msg import Mon
 
+INITIAL_VAARIABLES = {"log": 1,                     # 1 means verbose logging
+                      "max_ang": 0.75,              # maximum angular velcoicy (imposed by safe_publish)
+                      "max_lin": 0.5,               # maximum linear velocoty
+                      "target_ang": 0.75,           # angular velocity for normal speed
+                      "target_lin": 1.0,            # linear velocity for normal speed
+                      "r1" : "[[0,0],[1,1],[0,0]]", # A sample navigational route
+                      "arrival_delta" : 0.05,       # How close counts as the same point for goto command
+                      }
 
 class RoboGym:
     """Contains all the actions for the rg command set."""
@@ -31,7 +39,6 @@ class RoboGym:
         _, _, yaw = euler_from_quaternion([oreuler.x, oreuler.y, oreuler.z, oreuler.w])
         self.odom_pose = Pose2D(msg.pose.pose.position.x, msg.pose.pose.position.y, yaw)
         self.required_turn_angle = turn_to_target(self.odom_pose.theta, self.odom_pose.x, self.odom_pose.y, self.target.x, self.target.y)
-
 
     def log(self, msg: str):
         """print out log messages if the log variable is set to 1"""
@@ -59,7 +66,7 @@ class RoboGym:
         while not rospy.is_shutdown():
             self.distance = calc_distance(self.odom_pose, self.target)
             abs_required_turn = abs(normalize_angle(self.required_turn_angle))
-            if  self.distance > 0.05:
+            if  self.distance > rg.values["arrival_delta"]:
                 sig_turn = sigmoid(abs_required_turn, 0.5, rg.values["target_ang"])
                 self.twist.linear.x = 0 if abs_required_turn > 0.3 else sigmoid(self.distance, 0.5, rg.values["target_lin"])
                 self.twist.angular.z = sig_turn if normalize_angle(self.required_turn_angle) > 0 else -sig_turn
@@ -78,10 +85,10 @@ class RoboGym:
         self.safe_publish_cmd_vel()
 
     def move(self):
-        """Move the robot a certain distance at a certain speed"""
+        """Move the robot a certain distance"""
         self.twist = Twist()
         rate = rospy.Rate(10)
-        forward_speed =  self.values["forward_speed"]
+        forward_speed =  self.values["target_lin"]
         self.distance = self.values["distance"]
         self.target = offset_point(self.odom_pose, self.distance)
         self.mon_pub.publish(Mon("state", f"Move {self.distance:1.1} meters at {forward_speed:1.1} meters per second"))
@@ -102,12 +109,25 @@ class RoboGym:
                 return
             rate.sleep()
 
+    def is_valid_route(self, var):
+        """type check that this is a valid route"""
+        return isinstance(var, list) and all(isinstance(elem, list) and len(elem) == 2 for elem in var)
+    
+    def route(self):
+        """Move the robot along a route defined by a series of points"""
+        assert self.is_valid_route(self.values["params"][0])
+        for point in self.values["params"][0]:
+            self.values["x"] = point[0]
+            self.values["y"] = point[1]
+            self.goto()
+    
+
 # Main function.
 if __name__ == "__main__":
     # Initialize the node and name it.
     rospy.init_node("robogym")
     wait_for_simulator()
-    cp = Parser({"log": 1, "max_ang": 0.75, "max_lin": 0.5, "target_lin": 1.0, "target_ang": 0.75, "r1" : "[[0,0],[1,1],[0,0]]"})
+    cp = Parser(INITIAL_VAARIABLES)
     rg = RoboGym()
     while not rospy.is_shutdown():
         try:
@@ -121,6 +141,8 @@ if __name__ == "__main__":
                 rg.stop()
             elif command == "move":
                 rg.move()
+            elif command == "route":
+                rg.route();
         except KeyboardInterrupt:
             rg.stop()
             print("Stopping Robot. Type Quit or Exit to leave")

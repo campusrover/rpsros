@@ -29,10 +29,10 @@ class Parser:
                 "usage": "Invalid command. Usage: goto <x> <y>"
             },
             "move": {
-                "args": ["<forward_speed>", "<distance>"],
-                "description": "Move with a given forward speed and distance",
+                "args": ["<distance>"],
+                "description": "Move straight from current pose, for specified distance",
                 "handler": self.move,
-                "usage": "Invalid command. Usage: move <speed> <distance>"
+                "usage": "Invalid command. Usage: move <distance>"
             },
             "stop": {
                 "args": [],
@@ -80,35 +80,33 @@ class Parser:
         """Set a variable to a value. Legal values are words and numbers"""
         parse_args = self.get_tokens(args)
         if not parse_args:
-            return False, self.command_info["usage"], "move", {}
+            return False, self.command_info["usage"], "set_variable", {}
         else:
             self.variables[parse_args[0]] = parse_args[1]
             return True, f"Variable '{parse_args[0]}' has been set to '{parse_args[1]}'.", "set", {}
 
     def show_variable(self, args):
         """Show the value of a variable"""
-        if len(args) == 0:
-            if self.variables:
-                variables_info = "\n".join([f"{name}: {value}" for name, value in self.variables.items()])
-                return True, f"Variables:\n{variables_info}", "show", {}
-            else:
-                return True, "No variables have been set.", "show", {}
-        elif len(args) == 1:
-            variable_name = args[0]
+        parse_args = self.get_tokens(args)
+        if len(parse_args) == 0:
+            variables_info = "\n".join([f"{name}: {value}" for name, value in self.variables.items()])
+            return True, f"Variables:\n{variables_info}", "show", {}
+        else:
+            return True, "No variables have been set.", "show", {}
+        if len(parse_args) == 1:
+            variable_name = parse_args[0]
             if variable_name in self.variables:
                 return True, f"The value of '{variable_name}' is '{self.variables[variable_name]}'.", "show", {}
-            else:
-                return False, f"Variable '{variable_name}' has not been set.", "show", {}
-        else:
-            return False, "Invalid command. Usage: show or show <variable>", "show", {}
+            return False, f"Variable '{variable_name}' has not been set.", "show", {}
+        return False, self.command_info["usage"], "set_variable", {}
 
     def move(self, args):
         """Parse the move command"""
         parse_args = self.get_tokens(args)
-        if (not parse_args):
+        if parse_args is False:
             return False, self.command_info["usage"], "move", {}
         else:
-            return True, f"Moving with forward speed: {parse_args[0]:2.2f}, distance: {parse_args[1]:2.2f}", "move", {"forward_speed": parse_args[0], "distance": parse_args[1]}
+            return True, f"Moving with forward speed: {parse_args[0]:2.2f}, distance: {parse_args[1]:2.2f}", "move", {"distance": parse_args[0]}
 
     def print_commands(self, _):
         """Display all the commands we know about"""
@@ -137,14 +135,13 @@ class Parser:
         if (not parse_args):
             return False, self.command_info["usage"], "route", {}
         else:
-            return True, f"Executing Route: {str(parse_args[0])}", "route", {"args": parse_args}
+            return True, f"Executing Route: {str(parse_args[0])}", "route", {"params": parse_args}
 
     def get_tokens(self, val_list):
         """parse a list of values, or return False if there's a parse error"""
         result = []
         for val in val_list:
             a_val = self.get_token(val)
-            print(a_val)
             if a_val is False:
                 return False
             else:
@@ -154,7 +151,6 @@ class Parser:
     def get_token(self, token):
         """Parse a value from a token. Either a word or a float or a list"""
         # Check if the token is a variable name, and if so, convert it to its digital value
-        print("get token", token)
         if token.isidentifier():
             return token
         try:
@@ -195,11 +191,11 @@ class Parser:
             # Execute the command
             self.command_info = self.command_table[command]
             status, message, result, params = self.command_info["handler"](args)
-            print(params, self.variables)
             values = {**params, **self.variables}
+            print(f"params: {params}, variables: {self.variables}, values: {values}")
             if status:
                 print(message)
-                if command in ("move", "stop", "goto", "quit", "exit"):
+                if command in ("move", "stop", "goto", "quit", "exit", "route", "exit"):
                     return command, message, result, values
             else:
                 print("Error:", message)
