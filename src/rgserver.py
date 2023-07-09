@@ -10,7 +10,7 @@ from tf.transformations import euler_from_quaternion
 from rgparser import Parser
 from rpsexamples.msg import Mon
 
-INITIAL_VAARIABLES = {"log": 1,                     # 1 means verbose logging
+INITIAL_VARIABLES = {"log": 1,                     # 1 means verbose logging
                       "max_ang": 0.75,              # maximum angular velcoicy (imposed by safe_publish)
                       "max_lin": 0.5,               # maximum linear velocoty
                       "target_ang": 0.75,           # angular velocity for normal speed
@@ -18,6 +18,41 @@ INITIAL_VAARIABLES = {"log": 1,                     # 1 means verbose logging
                       "r1" : "[[0,0],[1,1],[0,0]]", # A sample navigational route
                       "arrival_delta" : 0.05,       # How close counts as the same point for goto command
                       }
+
+# Define the command table
+COMMAND_TABLE = {
+    "route": {
+        "args": ["<route>"],
+        "nargs": 1,
+        "description": "Specific list of points. List can be zero or more points",
+        "handler": RoboGym.route,
+        "usage": "Invalid command. Usage: route <array of points>"
+    },
+    "goto": {
+        "args": ["<x>", "<y>"],
+        "description": "Go to given odometry coordinate",
+        "handler": RoboGym.goto,
+        "usage": "Invalid command. Usage: goto <x> <y>",
+        "nargs": 2,
+
+    },
+    "move": {
+        "args": ["<distance>"],
+        "description": "Move straight from current pose, for specified distance",
+        "handler": RoboGym.move,
+        "usage": "Invalid command. Usage: move <distance>",
+        "nargs": 1,
+
+    },
+
+    "stop": {
+        "args": [],
+        "nargs": 0,
+        "description": "Stop the robot",
+        "handler": RoboGym.stop,
+    },
+}
+
 
 class RoboGym:
     """Contains all the actions for the rg command set."""
@@ -127,7 +162,7 @@ if __name__ == "__main__":
     # Initialize the node and name it.
     rospy.init_node("robogym")
     wait_for_simulator()
-    cp = Parser(INITIAL_VAARIABLES)
+    cp = Parser(INITIAL_VARIABLES, COMMAND_TABLE)
     rg = RoboGym()
     while not rospy.is_shutdown():
         try:
