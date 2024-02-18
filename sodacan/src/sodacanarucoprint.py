@@ -11,12 +11,12 @@
 import cv2
 import numpy as np
 
-ppi = 75                       # pixels per inch
+ppi = 72                       # pixels per inch
 
 # Initialize dimensions
-strip_length_in_pixels = ppi * 9    # 6-inch strip
-strip_height_in_pixels = ppi * 2    # 2-inch height
-marker_side_length = ppi # Pixel length of the square ARuco markers
+strip_length_in_pixels = ppi * 9    # x inch strip
+strip_height_in_pixels = int(ppi * 2.5)    # 2-inch height
+marker_side_length = int(1.5 * ppi) # Pixel length of the square ARuco markers
 
 # Create a white strip
 strip = 255 * np.ones((strip_height_in_pixels, strip_length_in_pixels), dtype=np.uint8)
