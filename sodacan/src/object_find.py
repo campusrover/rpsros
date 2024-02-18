@@ -24,7 +24,6 @@ def image_callback(msg):
         if len(corners) > 0:
             ids = ids.flatten()
             image_logger(corners, ids)
-            print(ids)
 
 def image_logger(corners, ids):
     if not IMAGE_LOGGING:
@@ -60,4 +59,5 @@ if __name__ == '__main__':
     rospy.init_node('object_find', anonymous=True)
     rospy.Subscriber("/cv_camera/image_raw", Image, image_callback)
     image_pub = rospy.Publisher('/sodacan/image_raw', Image, queue_size=10)
+    tag_pub = rospy.Publisher('/sodacan/tag', , queue_size=10)
     rospy.spin()
