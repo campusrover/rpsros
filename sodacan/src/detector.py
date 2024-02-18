@@ -7,7 +7,6 @@ from cv_bridge import CvBridge
 
 DEBUG = False
 
-
 class Detector:
     """
     A class to detect ArUco markers using OpenCV in a ROS environment.
