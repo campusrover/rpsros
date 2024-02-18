@@ -21,7 +21,7 @@ class Detector:
 
     def __init__(self, marker_size: float):
         # Initialize the ROS node
-        rospy.init_node('aruco_marker_detector')
+        rospy.init_node("aruco_marker_detector")
 
         # Create a CvBridge object to convert ROS Image messages to OpenCV images
         self.bridge = CvBridge()
@@ -35,17 +35,16 @@ class Detector:
         # Set the parameters for marker detection
         self.parameters = cv2.aruco.DetectorParameters_create()
 
-        self.image_pub = rospy.Publisher('/sodacan/image_raw',
-                                         Image,
-                                         queue_size=10)
+        self.image_pub = rospy.Publisher("/sodacan/image_raw", Image, queue_size=10)
 
     def image_callback(self, msg: Image):
         # Convert the ROS Image message to an OpenCV image
-        cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+        cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
 
         # Detect ArUco markers in the image
         corners, ids, rejected = cv2.aruco.detectMarkers(
-            cv_image, self.dictionary, parameters=self.parameters)
+            cv_image, self.dictionary, parameters=self.parameters
+        )
 
         # Draw detected markers on the image
         cv_image = cv2.aruco.drawDetectedMarkers(cv_image, corners, ids)
@@ -56,7 +55,7 @@ class Detector:
             self.image_pub.publish(ros_image)
 
     def run(self):
-        rospy.Subscriber('/cv_camera/image_raw', Image, self.image_callback)
+        rospy.Subscriber("/cv_camera/image_raw", Image, self.image_callback)
         rospy.spin()
 
 
