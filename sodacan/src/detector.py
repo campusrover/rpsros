@@ -22,7 +22,6 @@ class Detector:
         self.dist_coeffs = None
         self.camera_info_needed = True
 
-
         if DEBUG:
             self.image_pub = rospy.Publisher("/sodacan/image_raw",
                                              Image,
@@ -32,9 +31,6 @@ class Detector:
         cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
         corners, ids, rejected = cv2.aruco.detectMarkers(
             cv_image, self.dictionary, parameters=self.parameters)
-        print("CORNERS: ")
-        print(corners)
-        
         # If markers are detected
         if ids is not None:
             rvecs, tvecs, _objPoints = cv2.aruco.estimatePoseSingleMarkers(
@@ -46,7 +42,7 @@ class Detector:
                     tvec[0][0],
                     tvec[0][2])  # Convert from radians to degrees if necessary
 
-                print(f"Distance: {distance}, Bearing: {bearing} radians")
+                print(f"Distance: {distance:.2f}, Bearing: {bearing:.2f} radians")
 
         if DEBUG:
             # Draw detected markers on the image
@@ -56,10 +52,8 @@ class Detector:
 
     def camera_info_callback(self, msg: CameraInfo):
         if self.camera_info_needed:
-            self.camera_matrix = msg.K
+            self.camera_matrix = np.array(msg.K).reshape((3, 3))
             self.dist_coeffs = msg.D
-            print(self.camera_matrix)
-            print(self.dist_coeffs)
             self.camera_info_needed = False
 
     def run(self):
@@ -70,3 +64,4 @@ class Detector:
 if __name__ == "__main__":
     marker_detector = Detector(marker_size=0.03)
     marker_detector.run()
+
