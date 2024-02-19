@@ -2,10 +2,10 @@
 
 import cv2
 import rospy
-from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
+from sensor_msgs.msg import Image
 
-DEBUG = False
+DEBUG = True
 
 class Detector:
     """
@@ -21,35 +21,30 @@ class Detector:
     def __init__(self, marker_size: float):
         # Initialize the ROS node
         rospy.init_node("aruco_marker_detector")
-
-        # Create a CvBridge object to convert ROS Image messages to OpenCV images
         self.bridge = CvBridge()
-
-        # Set the marker size
         self.marker_size = marker_size
-
-        # Load the ArUco marker dictionary
         self.dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
-
-        # Set the parameters for marker detection
         self.parameters = cv2.aruco.DetectorParameters_create()
 
-        self.image_pub = rospy.Publisher("/sodacan/image_raw", Image, queue_size=10)
+        if DEBUG:
+            self.image_pub = rospy.Publisher("/sodacan/image_raw", Image, queue_size=10)
 
     def image_callback(self, msg: Image):
-        # Convert the ROS Image message to an OpenCV image
         cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
-
-        # Detect ArUco markers in the image
         corners, ids, rejected = cv2.aruco.detectMarkers(
             cv_image, self.dictionary, parameters=self.parameters
         )
+        # If markers are detected
+        if ids is not None:
+            rvecs, tvecs, _objPoints = aruco.estimatePoseSingleMarkers(corners, markerLength, cameraMatrix, distCoeffs)            
+            for tvec in tvecs:
+                distance = np.linalg.norm(tvec)
+                bearing = np.arctan2(tvec[0][0], tvec[0][2])  # Convert from radians to degrees if necessary
+                print(f"Distance: {distance}, Bearing: {bearing} radians")
 
-        # Draw detected markers on the image
-        cv_image = cv2.aruco.drawDetectedMarkers(cv_image, corners, ids)
-
-        # Display the image
         if DEBUG:
+            # Draw detected markers on the image
+            cv_image = cv2.aruco.drawDetectedMarkers(cv_image, corners, ids)
             ros_image = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
             self.image_pub.publish(ros_image)
 
@@ -61,3 +56,43 @@ class Detector:
 if __name__ == "__main__":
     marker_detector = Detector(marker_size=0.04)
     marker_detector.run()
+
+
+
+
+import cv2
+import cv2.aruco as aruco
+import numpy as np
+
+# Assuming cameraMatrix and distCoeffs are known (from calibration)
+cameraMatrix = # Your camera matrix
+distCoeffs = # Your distortion coefficients
+
+# Load the image
+image = cv2.imread('path_to_your_image.jpg')
+
+# Convert to grayscale
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+# Detect markers
+arucoDict = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
+corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, arucoDict)
+
+# If markers are detected
+if ids is not None:
+    # Estimate pose
+    rvecs, tvecs, _objPoints = aruco.estimatePoseSingleMarkers(corners, markerLength, cameraMatrix, distCoeffs)
+    
+    for tvec in tvecs:
+        # Compute distance
+        distance = np.linalg.norm(tvec)
+        
+        # Compute bearing (example for bearing in the xz plane)
+        bearing = np.arctan2(tvec[0][0], tvec[0][2])  # Convert from radians to degrees if necessary
+        
+        print(f"Distance: {distance}, Bearing: {bearing} radians")
+
+# Display the result
+cv2.imshow('Image', image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
