@@ -1,7 +1,17 @@
 <launch>
 
+  <arg name="log_level" default="warn" />
+  <include file="$(find rosconsole_bridge)/launch/rosconsole.launch">
+    <arg name="log_level" value="$(arg log_level)" />
+  </include>
+
   <include file="$(find plat)/launch/mini_bringup.launch" />
   <include file="$(find plat)/launch/joy_teleop.launch" />
+
+
+  <node pkg="my_package" type="my_node" name="my_node">
+    <param name="log_level" value="$(arg log_level)"/>
+  </node>
 
   <node pkg="cv_camera" type="cv_camera_node" name="cv_camera" output="screen">
     <param name="rate" value="15" />
