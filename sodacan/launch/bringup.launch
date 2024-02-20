@@ -1,9 +1,6 @@
 <launch>
 
   <arg name="log_level" default="warn" />
-  <include file="$(find rosconsole_bridge)/launch/rosconsole.launch">
-    <arg name="log_level" value="$(arg log_level)" />
-  </include>
 
   <include file="$(find plat)/launch/mini_bringup.launch" />
   <include file="$(find plat)/launch/joy_teleop.launch" />
