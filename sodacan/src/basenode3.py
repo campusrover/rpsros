@@ -38,7 +38,6 @@ class BaseNode:
             self.rate = rospy.Rate(self.hertz)
             while not rospy.is_shutdown() and not self.shutdown_requested:
                 self.loop()
-                print("basenode loop")
                 self.rate.sleep()
         except rospy.exceptions.ROSInterruptException:
             bu.info("exiting...")
