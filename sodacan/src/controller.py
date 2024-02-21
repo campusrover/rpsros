@@ -10,20 +10,18 @@ class Controller(BaseNode):
         super().__init__()
         self.driver = Driver()
         self.aruco_sub = rospy.Subscriber('/aruco', Float64MultiArray, self.aruco_cb)
-        self.driver.cont_rotate_in_place(-0.4)
+        self.driver.cont_rotate_in_place(0.9, 3, 3)
 
     def aruco_cb(self, msg: Float64MultiArray):
-        print("callback")
         distance = msg.data[0]
         bearing = msg.data[1]
-        rospy.loginfo(f"{distance=:.1f} {bearing=:.1f}")
+        rospy.logdebug(f"{distance=:.1f} {bearing=:.1f}")
+        self.driver.stop()
 
     def loop(self):
-        print("loop")
         self.driver.loop()
 
 if __name__ == "__main__":
-    print("controller start")
     rospy.init_node("Controller")
     controller = Controller()
     controller.run()
