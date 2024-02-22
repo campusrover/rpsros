@@ -6,10 +6,9 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import CameraInfo
 from std_msgs.msg import Float64MultiArray
-
 import numpy as np
 
-DEBUG = False
+DEBUG = True
 
 class Detector:
     def __init__(self, marker_size: float):
@@ -63,7 +62,6 @@ class Detector:
         rospy.Subscriber("/cv_camera/image_raw", Image, self.image_callback)
         rospy.Subscriber("/cv_camera/camera_info", CameraInfo, self.camera_info_callback)
         self.aruco_pub = rospy.Publisher('/aruco', Float64MultiArray, queue_size=10)
-
         rospy.spin()
 
 if __name__ == "__main__":
