@@ -43,8 +43,7 @@ class Detector:
                 bearing = np.arctan2(
                     tvec[0][0],
                     tvec[0][2])  # Convert from radians to degrees if necessary
-                if DEBUG:
-                    self.detector_node.loginfo(f"Distance: {distance:.2f}, Bearing: {bearing:.2f} radians")
+                rospy.loginfo(f"Distance: {distance:.2f}, Bearing: {bearing:.2f} radians")
                 self.aruco_message.data = [distance, bearing]
                 self.aruco_pub.publish(self.aruco_message)
 
@@ -68,6 +67,6 @@ class Detector:
         rospy.spin()
 
 if __name__ == "__main__":
-    marker_detector = Detector(marker_size=0.03)
+    marker_detector = Detector(marker_size=0.0625)
     marker_detector.run()
 
