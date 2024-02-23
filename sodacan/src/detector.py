@@ -8,7 +8,7 @@ from sensor_msgs.msg import CameraInfo
 from std_msgs.msg import Float64MultiArray
 import numpy as np
 
-DEBUG = True
+DEBUG = False
 
 class Detector:
     def __init__(self, marker_size: float):
@@ -42,7 +42,7 @@ class Detector:
                 bearing = np.arctan2(
                     tvec[0][0],
                     tvec[0][2])  # Convert from radians to degrees if necessary
-                rospy.loginfo(f"Distance: {distance:.2f}, Bearing: {bearing:.2f} radians")
+                rospy.logerr(f"Distance: {distance:.2f}, Bearing: {bearing:.2f} radians")
                 self.aruco_message.data = [distance, bearing]
                 self.aruco_pub.publish(self.aruco_message)
 
