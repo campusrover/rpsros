@@ -27,7 +27,7 @@ class Driver():
         self.twist.angular.z = 0
 
     def move(self, linear: float, angular: float):
-        self.state = "move"
+        self._state = "move"
         self.twist.linear.x = linear
         self.twist.angular.z = angular
 
@@ -38,7 +38,7 @@ class Driver():
         self.waiting_count = waiting_count
 
     def loop(self):
-        rospy.loginfo(f"{self._state} {self.turning_ticks=} {self.waiting_ticks=}")
+        rospy.logdebug(f"{self._state} {self.turning_ticks=} {self.waiting_ticks=} {self.twist.linear.x=} {self.twist.angular.z=}")
         self.cmd_vel_pub.publish(self.twist)
         if self._state == "rotate_in_place" and self.turning_count > 0 and self.waiting_count <= 0:
             self.twist.linear.x = 0

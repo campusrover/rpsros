@@ -10,15 +10,15 @@ TARGET_DISTANCE = 0.215
 TARGET_BEARING = 0.249
 TARGET_LOST_CUTOFF = 10
 
-LOOKING_ROTATE_SPEED = 0.3
+LOOKING_ROTATE_SPEED = 0.4
 LOOKING_TURNING_TICKS = 3
 LOOKING_WAITING_TICKS = 2
 
-TO_TARGET_LINEAR_SPEED = 0.3
-TO_TARGET_DISTANCE = 1.0
+APPROACH_LINEAR_SPEED = 0.3
+APPROACH_DISTANCE = 1.0
 
 FINAL_APPROACH_DISTANCE = 0.5
-FINAL_APPRPACH_LINEAR_SPEED = 0.1
+FINAL_APPRPACH_LINEAR_SPEED = 0.15
 
 class Controller(BaseNode):
     def __init__(self):
@@ -33,10 +33,10 @@ class Controller(BaseNode):
         self.time_since_target = 0
         self.distance = msg.data[0]
         self.bearing = msg.data[1]
-        rospy.logdebug(f"{self.distance=:.1f} {self.bearing=:.1f}")
+        rospy.loginfo(f"{self.state} {self.distance:.2f} {self.bearing:.2f}")
         if self.outside_to_target_distance():
             self.state = "to target"
-            self.driver.move(TO_TARGET_LINEAR_SPEED, -self.bearing)
+            self.driver.move(APPROACH_LINEAR_SPEED, -self.bearing)
         elif (not self.outside_to_target_distance()):
             self.state = "final"
             self.driver.move(FINAL_APPRPACH_LINEAR_SPEED, -self.bearing)
@@ -51,7 +51,7 @@ class Controller(BaseNode):
             self.driver.stop()
 
     def outside_to_target_distance(self) -> Boolean:
-        return self.distance > TO_TARGET_DISTANCE
+        return self.distance > APPROACH_DISTANCE
 
     def at_target(self):
         return abs(self.distance - TARGET_DISTANCE) < 0.1 and abs(self.bearing - TARGET_BEARING) < 0.1
