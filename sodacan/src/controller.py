@@ -43,7 +43,7 @@ class Controller(BaseNode):
         elif not self.outside_target_distance() and self.state == "to target":
             self.state = "final"
             self.driver.move(FINAL_APPRPACH_LINEAR_SPEED, -self.bearing)
-        elif at_target():
+        elif self.at_target():
             self.state = "at target"
             self.driver.stop()
         else:
