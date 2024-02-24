@@ -12,10 +12,10 @@ import cv2
 import numpy as np
 
 ppi = 72  # pixels per inch
-tag_count = 3
+tag_count = 2
 strip_length_inch = 8.25
-strip_height_inch = 3.0
-tag_height_inch = 2.5
+strip_height_inch = 2.4
+tag_height_inch = 1.8
 
 
 # Initialize dimensions

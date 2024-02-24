@@ -42,7 +42,4 @@ class BaseNode:
         except rospy.exceptions.ROSInterruptException:
             bu.info("exiting...")
 
-if __name__ == '__main__':
-    rn = BaseNode()
-    rospy.on_shutdown(rn.shutdown_hook)
-    rn.run()
+
