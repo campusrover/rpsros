@@ -8,11 +8,11 @@ from driver import Driver
 
 TARGET_DISTANCE = 0.215
 TARGET_BEARING = 0.249
-TARGET_LOST_CUTOFF = 10
+TARGET_LOST_CUTOFF = 9
 
-LOOKING_ROTATE_SPEED = 0.4
+LOOKING_ROTATE_SPEED = 0.9
 LOOKING_TURNING_TICKS = 3
-LOOKING_WAITING_TICKS = 2
+LOOKING_WAITING_TICKS = 4
 
 APPROACH_LINEAR_SPEED = 0.3
 APPROACH_DISTANCE = 1.0
@@ -33,7 +33,7 @@ class Controller(BaseNode):
         self.time_since_target = 0
         self.distance = msg.data[0]
         self.bearing = msg.data[1]
-        rospy.loginfo(f"{self.state} {self.distance:.2f} {self.bearing:.2f}")
+        rospy.loginfo(f"controller: {self.state} {self.distance:.2f} {self.bearing:.2f}")
         if self.outside_to_target_distance():
             self.state = "to target"
             self.driver.move(APPROACH_LINEAR_SPEED, -self.bearing)
@@ -58,13 +58,14 @@ class Controller(BaseNode):
     
     def loop(self):
         self.time_since_target += 1
-        if (self.time_since_target > TARGET_LOST_CUTOFF):
+        if (self.state != "looking" and self.time_since_target > TARGET_LOST_CUTOFF):
             self.state = "looking"
-            self.driver.rotate_in_place(LOOKING_ROTATE_SPEED, LOOKING_TURNING_TICKS, LOOKING_WAITING_TICKS)
+            self.driver.rotate_in_place(LOOKING_ROTATE_SPEED, LOOKING_TURNING_TICKS, LOOKING_WAITING_TICKS)                    
         self.driver.loop()
 
 if __name__ == "__main__":
     rospy.init_node("Controller")
     controller = Controller()
     rospy.on_shutdown(controller.shutdown_hook)
+    rospy.loginfo("Controller Started...")
     controller.run()

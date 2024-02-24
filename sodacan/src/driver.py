@@ -11,14 +11,14 @@ class Driver():
         self.set_counts(0, 0, 0, 0)
         self.cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
 
-    def rotate_in_place(self, speed: float = 0.0, turning_ticks: int = 0, waiting_ticks: int = 0):
+    def rotate_in_place(self, speed: float = 0.0, moving_ticks: int = 0, waiting_ticks: int = 0):
         self.speed = speed
-        self.set_counts(turning_ticks, waiting_ticks, turning_ticks, 0)
+        self.set_counts(moving_ticks, waiting_ticks, moving_ticks, 0)
         self._state = "rotate_in_place"
 
-    def line_patrol(self, speed: float = 0.0, turning_ticks: int = 0, waiting_ticks: int = 0):
+    def line_patrol(self, speed: float = 0.0, moving_ticks: int = 0, waiting_ticks: int = 0):
         self.speed = speed
-        self.set_counts(turning_ticks, waiting_ticks, turning_ticks, 0)
+        self.set_counts(moving_ticks, waiting_ticks, moving_ticks, 0)
         self._state = "line_patrol"
 
     def stop(self):
@@ -31,39 +31,31 @@ class Driver():
         self.twist.linear.x = linear
         self.twist.angular.z = angular
 
-    def set_counts(self, turning_ticks: int, waiting_ticks: int, turning_count: int, waiting_count: int):
-        self.turning_ticks = turning_ticks
+    def set_counts(self, moving_ticks: int, waiting_ticks: int, moving_count: int, waiting_count: int):
+        self.moving_ticks = moving_ticks
         self.waiting_ticks = waiting_ticks
-        self.turning_count = turning_count
+        self.moving_count = moving_count
         self.waiting_count = waiting_count
 
     def loop(self):
-        rospy.logdebug(f"{self._state} {self.turning_ticks=} {self.waiting_ticks=} {self.twist.linear.x=} {self.twist.angular.z=}")
+        rospy.loginfo(f"driver: {self._state} mov:{self.moving_count} wait:{self.waiting_count} x:{self.twist.linear.x:0.2f} z:{self.twist.angular.z:0.2f}")
         self.cmd_vel_pub.publish(self.twist)
-        if self._state == "rotate_in_place" and self.turning_count > 0 and self.waiting_count <= 0:
-            self.twist.linear.x = 0
-            self.twist.angular.z = self.speed        
-            self.turning_ticks -= 1
-            if (self.turning_ticks == 0):
-                self.passive_count = self.waiting_count
-        elif self._state == "rotate_in_place" and self.turning_count <= 0 and self.waiting_count >= 0:
+        if self.moving_count > 0 and self.waiting_count <= 0:
+            if self._state == "rotate_in_place":
+                self.twist.linear.x = 0
+                self.twist.angular.z = self.speed      
+            elif self._state == "line_patrol": 
+                self.twist.linear.x = self.speed
+                self.twist.angular.z = 0
+            self.moving_count -= 1
+            if (self.moving_count == 0):
+                self.waiting_count = self.waiting_ticks
+        elif self.moving_count <= 0 and self.waiting_count > 0:
             self.twist.linear.x = 0
             self.twist.angular.z = 0          
-            self.passive_count -= 1
-            if (self.waiting_ticks == 0):
-                self.turning_ticks = self.active_ticks
-        elif self._state == "line_patrol" and self.turning_count > 0 and self.waiting_count <= 0:
-            self.twist.linear.x = self.speed
-            self.twist.angular.z = 0
-            self.turning_ticks -= 1
-            if (self.turning_ticks == 0):
-                self.passive_count = self.waiting_count
-        elif self._state == "line_patrol" and self.turning_count <= 0 and self.waiting_count >= 0:
-            self.twist.linear.x = -self.speed
-            self.twist.angular.z = 0          
-            self.passive_count -= 1
-            if (self.passive_count == 0):
-                self.active_count = self.active_ticks
+            self.waiting_count -= 1
+            if (self.waiting_count == 0):
+                self.moving_count = self.moving_ticks
         elif self._state == "stopped" or self._state == "move":
             pass
         else:

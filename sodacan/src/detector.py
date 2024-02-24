@@ -42,7 +42,7 @@ class Detector:
                 bearing = np.arctan2(
                     tvec[0][0],
                     tvec[0][2])  # Convert from radians to degrees if necessary
-                rospy.logerr(f"Distance: {distance:.2f}, Bearing: {bearing:.2f} radians")
+                rospy.logdebug(f"Distance: {distance:.2f}, Bearing: {bearing:.2f} radians")
                 self.aruco_message.data = [distance, bearing]
                 self.aruco_pub.publish(self.aruco_message)
 
@@ -61,11 +61,11 @@ class Detector:
     def run(self):
         rospy.Subscriber("/cv_camera/image_raw", Image, self.image_callback)
         rospy.Subscriber("/cv_camera/camera_info", CameraInfo, self.camera_info_callback)
-        self.aruco_pub = rospy.Publisher('/aruco', Float64MultiArray, queue_size=10)
+        self.aruco_pub = rospy.Publisher('/aruco', Float64MultiArray, queue_size=1)
         rospy.loginfo("Detector running...")
         rospy.spin()
 
 if __name__ == "__main__":
-    marker_detector = Detector(marker_size=0.0625)
+    marker_detector = Detector(marker_size=0.045)
     marker_detector.run()
 
