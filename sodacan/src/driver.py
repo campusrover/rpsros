@@ -38,7 +38,7 @@ class Driver():
         self.waiting_count = waiting_count
 
     def loop(self):
-        rospy.loginfo(f"driver: {self._state} mov:{self.moving_count} wait:{self.waiting_count} x:{self.twist.linear.x:0.2f} z:{self.twist.angular.z:0.2f}")
+        rospy.loginfo_throttle(3, f"driver: {self._state} mov:{self.moving_count} wait:{self.waiting_count} x:{self.twist.linear.x:0.2f} z:{self.twist.angular.z:0.2f}")
         self.cmd_vel_pub.publish(self.twist)
         if self.moving_count > 0 and self.waiting_count <= 0:
             if self._state == "rotate_in_place":
