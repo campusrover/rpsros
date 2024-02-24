@@ -12,45 +12,45 @@ TARGET_LOST_CUTOFF = 10
 
 LOOKING_ROTATE_SPEED = 0.3
 LOOKING_TURNING_TICKS = 3
-LOOKING_PAUSING_TICKS = 2
+LOOKING_WAITING_TICKS = 2
 
-TO_TARGET_LINEAR_SPEED = 0.5
+TO_TARGET_LINEAR_SPEED = 0.3
 TO_TARGET_DISTANCE = 1.0
 
 FINAL_APPROACH_DISTANCE = 0.5
 FINAL_APPRPACH_LINEAR_SPEED = 0.1
-
-
 
 class Controller(BaseNode):
     def __init__(self):
         super().__init__()
         self.driver = Driver()
         self.aruco_sub = rospy.Subscriber('/aruco', Float64MultiArray, self.aruco_cb)
-        self.driver.rotate_in_place(LOOKING_ROTATE_SPEED, LOOKING_TURNING_TICKS, LOOKING_PAUSING_TICKS)
+        self.driver.rotate_in_place(LOOKING_ROTATE_SPEED, LOOKING_TURNING_TICKS, LOOKING_WAITING_TICKS)
         self.state = "looking"
         self.time_since_target = 0
         
-
     def aruco_cb(self, msg: Float64MultiArray):
         self.time_since_target = 0
         self.distance = msg.data[0]
         self.bearing = msg.data[1]
         rospy.logdebug(f"{self.distance=:.1f} {self.bearing=:.1f}")
-        if self.outside_target_distance() and self.state == "looking":
+        if self.outside_to_target_distance():
             self.state = "to target"
             self.driver.move(TO_TARGET_LINEAR_SPEED, -self.bearing)
-        elif not self.outside_target_distance() and self.state == "to target":
+        elif (not self.outside_to_target_distance()):
             self.state = "final"
             self.driver.move(FINAL_APPRPACH_LINEAR_SPEED, -self.bearing)
         elif self.at_target():
             self.state = "at target"
             self.driver.stop()
+        elif self.state == "stop":
+            self.driver.stop()
         else:
-            rospy.logerr("Invalid state in controller.py")
+            rospy.logerr(f"Invalid state in controller.py {self.state=} {self.bearing=} {self.distance=}")
+            self.state = "stop"
             self.driver.stop()
 
-    def outside_target_distance(self) -> Boolean:
+    def outside_to_target_distance(self) -> Boolean:
         return self.distance > TO_TARGET_DISTANCE
 
     def at_target(self):
@@ -60,8 +60,7 @@ class Controller(BaseNode):
         self.time_since_target += 1
         if (self.time_since_target > TARGET_LOST_CUTOFF):
             self.state = "looking"
-            self.driver.rotate_in_place(0.9, 3, 2)
-            
+            self.driver.rotate_in_place(LOOKING_ROTATE_SPEED, LOOKING_TURNING_TICKS, LOOKING_WAITING_TICKS)
         self.driver.loop()
 
 if __name__ == "__main__":

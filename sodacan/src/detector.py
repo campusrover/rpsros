@@ -62,6 +62,7 @@ class Detector:
         rospy.Subscriber("/cv_camera/image_raw", Image, self.image_callback)
         rospy.Subscriber("/cv_camera/camera_info", CameraInfo, self.camera_info_callback)
         self.aruco_pub = rospy.Publisher('/aruco', Float64MultiArray, queue_size=10)
+        rospy.loginfo("Detector running...")
         rospy.spin()
 
 if __name__ == "__main__":
