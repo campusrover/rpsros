@@ -25,18 +25,13 @@ class BaseNode:
     def stop(self):
         pass
 
-    def shutdown_hook(self):
-        self.shutdown_requested = True
-        bu.info("Shutdown Requested")
-        self.stop()
-
     def loop(self):
         pass
 
     def run(self):
         try:
             self.rate = rospy.Rate(self.hertz)
-            while not rospy.is_shutdown() and not self.shutdown_requested:
+            while not rospy.is_shutdown():
                 self.loop()
                 self.rate.sleep()
         except rospy.exceptions.ROSInterruptException:

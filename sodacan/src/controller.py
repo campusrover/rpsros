@@ -20,7 +20,7 @@ APPROACH_DISTANCE = 1.0
 FINAL_APPROACH_DISTANCE = 0.5
 FINAL_APPRPACH_LINEAR_SPEED = 0.15
 
-class Controller(BaseNode):
+class Controller:
     def __init__(self):
         super().__init__()
         self.driver = Driver()
@@ -28,7 +28,7 @@ class Controller(BaseNode):
         self.driver.rotate_in_place(LOOKING_ROTATE_SPEED, LOOKING_TURNING_TICKS, LOOKING_WAITING_TICKS)
         self.state = "looking"
         self.time_since_target = 0
-        
+
     def aruco_cb(self, msg: Float64MultiArray):
         self.time_since_target = 0
         self.distance = msg.data[0]
@@ -56,16 +56,21 @@ class Controller(BaseNode):
     def at_target(self):
         return abs(self.distance - TARGET_DISTANCE) < 0.1 and abs(self.bearing - TARGET_BEARING) < 0.1
     
-    def loop(self):
-        self.time_since_target += 1
-        if (self.state != "looking" and self.time_since_target > TARGET_LOST_CUTOFF):
-            self.state = "looking"
-            self.driver.rotate_in_place(LOOKING_ROTATE_SPEED, LOOKING_TURNING_TICKS, LOOKING_WAITING_TICKS)                    
-        self.driver.loop()
+    def run(self):
+        self.rate = rospy.Rate(30)
+        try:
+            while not rospy.is_shutdown():
+                self.time_since_target += 1
+                if (self.state != "looking" and self.time_since_target > TARGET_LOST_CUTOFF):
+                    self.state = "stop"
+                self.driver.loop()
+                self.rate.sleep()
+
+        except rospy.exceptions.ROSInterruptException:
+            bu.info("exiting...")
 
 if __name__ == "__main__":
     rospy.init_node("Controller")
     controller = Controller()
-    rospy.on_shutdown(controller.shutdown_hook)
     rospy.loginfo("Controller Started...")
     controller.run()

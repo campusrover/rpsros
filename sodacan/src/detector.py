@@ -68,4 +68,4 @@ class Detector:
 if __name__ == "__main__":
     marker_detector = Detector(marker_size=0.045)
     marker_detector.run()
-
+    
