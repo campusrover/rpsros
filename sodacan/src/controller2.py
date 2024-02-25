@@ -8,17 +8,31 @@ from driver import Driver
 
 TARGET_DISTANCE = 0.26
 TARGET_BEARING = 0.27
+
 TARGET_LOST_CUTOFF = 9
 
 LOOKING_ROTATE_SPEED = 0.9
-LOOKING_TURNING_TICKS = 8
-LOOKING_WAITING_TICKS = 10
+LOOKING_TURNING_TICKS = 3
+LOOKING_WAITING_TICKS = 4
 
-APPROACH_LINEAR_SPEED = 0.3
-APPROACH_DISTANCE = 1.0
+INNER_CIRCLE = 0.75
+OUTER_CIRCLE = 1.25
 
-FINAL_APPROACH_DISTANCE = 0.5
-FINAL_APPROACH_LINEAR_SPEED = 0.15
+INNER_BEARING = 0.5
+OUTER_BEARING = 1.0
+
+from enum import Enum
+
+class Rings(Enum):
+    OUTER = 1
+    INNER = 2
+    ANY - 3
+
+class Bearings(Enum):
+    CENTER = 1
+    LEFT = 2
+    RIGHT = 3
+    ANY = 4
 
 class Controller:
     def __init__(self):
@@ -54,17 +68,24 @@ class Controller:
             rospy.logerr(f"Invalid state in controller.py {self.state=} {self.bearing=} {self.distance=}")
             self.state = "stop"
             self.driver.stop()
+    
+    def in_inner_circle_center_inner_bearing(self):
+        pass
+    
+    def in_outer_circle_center_outer_bearing(self):
+        pass
 
-    def outside_to_target_distance(self) -> Boolean:
-        return self.distance > APPROACH_DISTANCE
+    def inner_circle_inner_left_bearing(self):
+        pass
 
-    def at_target_bearing(self):
-        return abs(self.bearing - TARGET_BEARING) < 0.1
+    def inner_circle_inner_right_bearing(self):
+        pass
 
-    def at_target_distance(self):
-        return abs(self.distance - TARGET_DISTANCE) < 0.1
+    def in_zone(bearing: Bearings, ring: Rings):
 
-    def run(self):
+
+
+   def run(self):
         self.rate = rospy.Rate(30)
         try:
             while not rospy.is_shutdown():
