@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 HZ = 20
-LINE_MOVE_TIME = 2
-LINE_PAUSE_TIME = 0.4
-LINE_SPEED = 0.2
+LINE_MOVE_TIME = 8
+LINE_PAUSE_TIME = 0.2
+LINE_SPEED = 0.3
 
 import rospy
 from geometry_msgs.msg import Twist
