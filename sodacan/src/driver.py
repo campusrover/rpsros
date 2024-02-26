@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 
+HZ = 20
+LINE_MOVE_TIME = 2
+LINE_PAUSE_TIME = 0.4
+LINE_SPEED = 0.2
+
 import rospy
 from geometry_msgs.msg import Twist
 
 class Driver():
     def __init__(self):
-        self._state = "idle"
+        self.state = "idle"
         self.twist = Twist()
         self.speed = 0
         self.set_counts(0, 0, 0, 0)
@@ -14,20 +19,20 @@ class Driver():
     def rotate_in_place(self, speed: float = 0.0, moving_ticks: int = 0, waiting_ticks: int = 0):
         self.speed = speed
         self.set_counts(moving_ticks, waiting_ticks, moving_ticks, 0)
-        self._state = "rotate_in_place"
+        self.state = "rotate_in_place"
 
     def line_patrol(self, speed: float = 0.0, moving_ticks: int = 0, waiting_ticks: int = 0):
         self.speed = speed
         self.set_counts(moving_ticks, waiting_ticks, moving_ticks, 0)
-        self._state = "line_patrol"
+        self.state = "line_patrol"
 
     def stop(self):
-        self._state = "stopped"
+        self.state = "stopped"
         self.twist.linear.x = 0
         self.twist.angular.z = 0
 
     def move(self, linear: float, angular: float):
-        self._state = "move"
+        self.state = "move"
         self.twist.linear.x = linear
         self.twist.angular.z = angular
 
@@ -38,13 +43,13 @@ class Driver():
         self.waiting_count = waiting_count
 
     def loop(self):
-        rospy.loginfo_throttle(3, f"driver: {self._state} mov:{self.moving_count} wait:{self.waiting_count} x:{self.twist.linear.x:0.2f} z:{self.twist.angular.z:0.2f}")
+        rospy.loginfo_throttle(3, f"driver: {self.state} mov:{self.moving_count} wait:{self.waiting_count} x:{self.twist.linear.x:0.2f} z:{self.twist.angular.z:0.2f}")
         self.cmd_vel_pub.publish(self.twist)
         if self.moving_count > 0 and self.waiting_count <= 0:
-            if self._state == "rotate_in_place":
+            if self.state == "rotate_in_place":
                 self.twist.linear.x = 0
                 self.twist.angular.z = self.speed      
-            elif self._state == "line_patrol": 
+            elif self.state == "line_patrol":
                 self.twist.linear.x = self.speed
                 self.twist.angular.z = 0
             self.moving_count -= 1
@@ -56,7 +61,21 @@ class Driver():
             self.waiting_count -= 1
             if (self.waiting_count == 0):
                 self.moving_count = self.moving_ticks
-        elif self._state == "stopped" or self._state == "move":
+                if self.state == "line_patrol":
+                    self.speed = -self.speed
+        elif self.state == "stopped" or self.state == "move":
             pass
         else:
-            rospy.logerr(f"Driver error invalid state {self._state=}")
+            rospy.logerr(f"Driver error invalid state {self.state=} {self.moving_count=} {self.waiting_count}")
+
+if __name__ == "__main__":
+    rospy.init_node("driver_tester")
+    driver = Driver()
+    driver.line_patrol(LINE_SPEED, int(LINE_MOVE_TIME * HZ), int(LINE_PAUSE_TIME * HZ))
+    rate = rospy.Rate(HZ)
+    try:
+        while not rospy.is_shutdown():
+            driver.loop()
+            rate.sleep()
+    except rospy.exceptions.ROSInterruptException:
+        rospy.loginfo("exiting...")
