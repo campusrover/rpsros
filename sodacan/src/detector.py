@@ -28,8 +28,16 @@ class Detector:
                                              Image,
                                              queue_size=10)
 
+    def prepare_marker_image(self, img):
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        # Maximize contrast with adaptive thresholding
+        thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+        return thresh
+
     def image_callback(self, msg: Image):
-        cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="mono8")
+        cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
+        cv_image = self.prepare_marker_image(cv_image)
         corners, ids, _ = cv2.aruco.detectMarkers(
             cv_image, self.dictionary, parameters=self.parameters)
         # If markers are detected
