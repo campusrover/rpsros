@@ -2,7 +2,6 @@
 
 from xmlrpc.client import Boolean
 import rospy
-from basenode3 import BaseNode
 from std_msgs.msg import Float64MultiArray
 from driver import Driver
 
@@ -23,7 +22,6 @@ FINAL_APPROACH_LINEAR_SPEED = 0.15
 
 class Controller:
     def __init__(self):
-        super().__init__()
         self.driver = Driver()
         self.aruco_sub = rospy.Subscriber('/aruco', Float64MultiArray, self.aruco_cb)
         self.driver.rotate_in_place(LOOKING_ROTATE_SPEED, LOOKING_TURNING_TICKS, LOOKING_WAITING_TICKS)
@@ -31,10 +29,13 @@ class Controller:
         self.time_since_target = 0
 
     def aruco_cb(self, msg: Float64MultiArray):
-        self.state = "driving"
+        if (self.state != "arrived"):
+            self.state = "driving"
         self.time_since_target = 0
         self.distance = msg.data[0]
         self.bearing = msg.data[1]
+        if at_target_bearing and at_target_distance:
+            self.state = "arrived"
         rospy.loginfo_throttle(3, f"controller: {self.state} {self.distance:.2f} {self.bearing:.2f}")
         self.driver.move(self.distance * 0.2, -self.bearing + 0.3) 
 
@@ -50,7 +51,7 @@ class Controller:
     def run(self):
         self.rate = rospy.Rate(HZ)
         try:
-            while not rospy.is_shutdown():
+            while not rospy.is_shutdown() and not self.state == "arrived":
                 self.time_since_target += 1
                 if (self.state != "looking" and self.state != "stop" and self.time_since_target > TARGET_LOST_CUTOFF):
                     rospy.loginfo("lost sight of target.")
