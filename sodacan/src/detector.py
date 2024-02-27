@@ -29,7 +29,7 @@ class Detector:
                                              queue_size=10)
 
     def image_callback(self, msg: Image):
-        cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="mono8")
         corners, ids, _ = cv2.aruco.detectMarkers(
             cv_image, self.dictionary, parameters=self.parameters)
         # If markers are detected
