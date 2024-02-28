@@ -11,7 +11,7 @@ TARGET_BEARING = 0.27
 TARGET_LOST_CUTOFF = 1 * HZ
 
 LOOKING_ROTATE_SPEED = 0.5
-LOOKING_TURNING_TICKS = 1 * HZ
+LOOKING_TURNING_TICKS = 2 * HZ
 LOOKING_WAITING_TICKS = 1 * HZ
 
 APPROACH_LINEAR_SPEED = 0.3
@@ -34,10 +34,10 @@ class Controller:
         self.time_since_target = 0
         self.distance = msg.data[0]
         self.bearing = msg.data[1]
-        if at_target_bearing and at_target_distance:
+        if self.at_target_bearing() and self.at_target_distance():
             self.state = "arrived"
         rospy.loginfo_throttle(3, f"controller: {self.state} {self.distance:.2f} {self.bearing:.2f}")
-        self.driver.move(self.distance * 0.2, -self.bearing + 0.3) 
+        self.driver.move(self.distance * 0.2, - (2*self.bearing)) 
 
     def outside_to_target_distance(self) -> Boolean:
         return self.distance > APPROACH_DISTANCE
