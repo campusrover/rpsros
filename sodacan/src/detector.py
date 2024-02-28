@@ -80,6 +80,7 @@ class Detector:
         return distance, bearing, roll, pitch, yaw
 
     def compute_pose(self, marker_ids, corners, aruco_marker_side_length, mtx, dst):
+        # Algorithm from https://automaticaddison.com/how-to-perform-pose-estimation-using-an-aruco-marker/
         # Get the rotation and translation vectors
         rvecs, tvecs, obj_points = cv2.aruco.estimatePoseSingleMarkers(
         corners,
