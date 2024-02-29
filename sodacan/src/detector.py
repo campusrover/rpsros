@@ -8,7 +8,7 @@ from sensor_msgs.msg import CameraInfo
 from std_msgs.msg import Float64MultiArray
 import numpy as np
 from math import atan2, sqrt, sin, cos
-from typing import Tuple
+from typing import NoReturn, Tuple
 from scipy.spatial.transform import Rotation as R
 from tf.transformations import euler_from_quaternion
 
@@ -32,36 +32,11 @@ class Detector:
 
     def prepare_marker_image(self, img):
         # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-
         # # Maximize contrast with adaptive thresholding
         # thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 2)
         return img
 
-    def get_metrics_from_pose(
-        self, rvec: Tuple[float, float, float], tvec: Tuple[float, float, float]
-    ) -> Tuple[float, float, float, float, float]:
-
-        # rvec - Rotation Vector
-        #   This is a 3x1 vector (array with 3 numbers) that contains the rotation of the marker/object in axis-angle representation
-        #   The 3 numbers represent rotation around X, Y, and Z axes respectively
-        #   Units are in radians
-        #   This compactly represents the 3D orientation of the fiducial marker
-
-        # tvec - Translation Vector
-        #   This is also a 3x1 vector (3 numbers)
-        #   Contains the 3D position of the fiducial marker center point with respect to the camera
-        #   The units are usually meters
-        #   The 3 numbers represent the X, Y and Z displacement of the marker from the camera origin
-
-        # Calculate distance using pythagorean theorem
-        # sqrt(x^2 + y^2 + z^2)
-        distance = sqrt(tvec[0] ** 2 + tvec[1] ** 2 + tvec[2] ** 2)
-
-        # Bearing using atan2(x / z)
-        # Returns angle between x-axis and (x, z) point
-        bearing = atan2(tvec[0], tvec[2])
-
+    def rvec2RPY0(self, rvec: Tuple[float, float, float]) -> Tuple[float, float, float]:
         # Roll from rotation vector
         # cos(roll) = sqrt(1 - sin(theta)^2) using trig identity
         theta = rvec[1]
@@ -78,39 +53,29 @@ class Detector:
         # Yaw using trig identities and atan2
         y = rvec[1] / sqrt(1 - sin(x) ** 2)
         yaw = atan2(sin(y), cos(y))
+        return roll, pitch, yaw
 
-        return distance, bearing, roll, pitch, yaw
+    def rvec2RPY1(self, rvec: Tuple[float, float, float]) -> Tuple[float, float, float]:
+        rmat, _ = cv2.Rodrigues(rvec)
+        sy = sqrt(rmat[0, 0] * rmat[0, 0] + rmat[1, 0] * rmat[1, 0])
+        singular = sy < 1e-6
+        if not singular:
+            x = atan2(rmat[2, 1], rmat[2, 2])
+            y = atan2(-rmat[2, 0], sy)
+            z = atan2(rmat[1, 0], rmat[0, 0])
+        else:
+            x = atan2(-rmat[1, 2], rmat[1, 1])
+            y = atan2(-rmat[2, 0], sy)
+            z = 0
+        return (x, y, z)
 
-    def compute_pose(self, marker_ids, corners, aruco_marker_side_length, mtx, dst):
-        # Algorithm from https://automaticaddison.com/how-to-perform-pose-estimation-using-an-aruco-marker/
-        # Get the rotation and translation vectors
-        rvecs, tvecs, obj_points = cv2.aruco.estimatePoseSingleMarkers(
-            corners, aruco_marker_side_length, mtx, dst
-        )
-
-        # The pose of the marker is with respect to the camera lens frame.
-        # Imagine you are looking through the camera viewfinder,
-        # the camera lens frame's:
-        # x-axis points to the right
-        # y-axis points straight down towards your toes
-        # z-axis points straight ahead away from your eye, out of the camera
-        for i, marker_id in enumerate(marker_ids):
-
-            # Store the translation (i.e. position) information
-            translation = tvecs[i][0]
-
-            # Store the rotation information
-            rotation_matrix = np.eye(4)
-            rotation_matrix[0:3, 0:3] = cv2.Rodrigues(np.array(rvecs[i][0]))[0]
-            r = R.from_matrix(rotation_matrix[0:3, 0:3])
-            quat = r.as_quat()
-
-            # Euler angle format in radians
-            euler_rotation = euler_from_quaternion(quat)
-            return (
-                translation,
-                euler_rotation,
-            )
+    def rec2RPY2(self, rvec: Tuple[float, float, float]) -> Tuple[float, float, float]:
+        rotation_matrix = np.eye(4)
+        rotation_matrix[0:3, 0:3] = cv2.Rodrigues(np.array(rvec[0]))[0]
+        r = R.from_matrix(rotation_matrix[0:3, 0:3])
+        quat = r.as_quat()
+        euler_rotation = euler_from_quaternion(quat)
+        return euler_rotation
 
     def image_callback(self, msg: Image):
         cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
@@ -118,42 +83,55 @@ class Detector:
         corners, ids, _ = cv2.aruco.detectMarkers(
             cv_image, self.dictionary, parameters=self.parameters
         )
+        rvecs, tvecs, _objPoints = cv2.aruco.estimatePoseSingleMarkers(
+            corners, self.marker_size, self.camera_matrix, self.dist_coeffs
+        )
 
         # If markers are detected
         if ids is not None:
-            trans, rot = self.compute_pose(
-                ids, corners, self.marker_size, self.camera_matrix, self.dist_coeffs
-            )
-            rvecs, tvecs, _objPoints = cv2.aruco.estimatePoseSingleMarkers(
-                corners, self.marker_size, self.camera_matrix, self.dist_coeffs
-            )
             for i in range(len(corners)):
-                distance, bearing, roll, pitch, yaw = self.get_metrics_from_pose(
-                    rvec=rvecs[i][0], tvec=tvecs[i][0]
-                )
-                rospy.logdebug(
-                    f"d:{distance:5.2f}, b:{bearing:5.2f}, rpy:({roll:6.2f},{pitch:6.2f},{yaw:6.2f}) rpy:({rot[0]:6.2f},{rot[1]:6.2f},{rot[2]:6.2f}) trans:({trans[0]:6.2f},{trans[1]:6.2f},{trans[2]:6.2f})"
-                )
-                self.aruco_message.data = [
-                    distance,
-                    bearing,
-                    roll,
-                    pitch,
-                    yaw,
-                    rot[0],
-                    rot[1],
-                    rot[2]
-                ]
+                rvec = rvecs[i]
+                tvec = tvecs[i]
+
+                # Trying which algo works correctly if any.
+                rpy0 = self.rvec2RPY0(rvec)
+                rpy1 = self.rvec2RPY1(rvec)
+                rpy2 = self.rvec2RPY2(rvec)
+
+                # Calculate distance using pythagorean theorem
+                distance = sqrt(tvec[0] ** 2 + tvec[1] ** 2 + tvec[2] ** 2)
+                bearing = atan2(tvec[0], tvec[2])
+
+                logstring = f"d:{distance:5.2f}, b:{bearing:5.2f}, rpy0:{rpy0}, rpy1:{rpy1}, rpy2:{rpy2}")
+
+                self.aruco_message.data = [distance, bearing]
                 self.aruco_pub.publish(self.aruco_message)
 
             if DEBUG:
                 # Draw detected markers on the image
                 for id in ids:
-                    cv2.drawFrameAxes(cv_image, self.camera_matrix, self.dist_coeffs, rvecs, tvecs, self.marker_size)
+                    cv2.drawFrameAxes(
+                        cv_image,
+                        self.camera_matrix,
+                        self.dist_coeffs,
+                        rvecs,
+                        tvecs,
+                        self.marker_size,
+                    )
                 cv_image = cv2.aruco.drawDetectedMarkers(cv_image, corners, ids)
+                self.text_on_image(logstring, cv_image)
                 # ros_image = self.bridge.cv2_to_imgmsg(cv_image, "mono8")
                 ros_image = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
                 self.image_pub.publish(ros_image)
+
+    def text_on_image(self, text: str, image) -> NoReturn:
+        font                   = cv2.FONT_HERSHEY_SIMPLEX
+        bottomLeftCornerOfText = [30,30]
+        fontScale              = 0.7
+        fontColor              = (255,255,255)
+        lineType               = 2
+        cv2.putText(image, text, tuple(bottomLeftCornerOfText), font, fontScale, fontColor, lineType)
+
 
     def camera_info_callback(self, msg: CameraInfo):
         if self.camera_info_needed:
