@@ -9,9 +9,10 @@ from std_msgs.msg import Float64MultiArray
 import numpy as np
 from math import atan2, sqrt, sin, cos
 from typing import Tuple
+from scipy.spatial.transform import Rotation as R
+from tf.transformations import euler_from_quaternion
 
-
-DEBUG = False
+DEBUG = True
 
 
 class Detector:
@@ -30,27 +31,28 @@ class Detector:
             self.image_pub = rospy.Publisher("/sodacan/image_raw", Image, queue_size=10)
 
     def prepare_marker_image(self, img):
-        thresh = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
 
         # # Maximize contrast with adaptive thresholding
         # thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 2)
-        return thresh
+        return img
 
     def get_metrics_from_pose(
         self, rvec: Tuple[float, float, float], tvec: Tuple[float, float, float]
     ) -> Tuple[float, float, float, float, float]:
 
-    # rvec - Rotation Vector
-    #   This is a 3x1 vector (array with 3 numbers) that contains the rotation of the marker/object in axis-angle representation
-    #   The 3 numbers represent rotation around X, Y, and Z axes respectively
-    #   Units are in radians
-    #   This compactly represents the 3D orientation of the fiducial marker
+        # rvec - Rotation Vector
+        #   This is a 3x1 vector (array with 3 numbers) that contains the rotation of the marker/object in axis-angle representation
+        #   The 3 numbers represent rotation around X, Y, and Z axes respectively
+        #   Units are in radians
+        #   This compactly represents the 3D orientation of the fiducial marker
 
-    # tvec - Translation Vector
-    #   This is also a 3x1 vector (3 numbers)
-    #   Contains the 3D position of the fiducial marker center point with respect to the camera
-    #   The units are usually meters
-    #   The 3 numbers represent the X, Y and Z displacement of the marker from the camera origin
+        # tvec - Translation Vector
+        #   This is also a 3x1 vector (3 numbers)
+        #   Contains the 3D position of the fiducial marker center point with respect to the camera
+        #   The units are usually meters
+        #   The 3 numbers represent the X, Y and Z displacement of the marker from the camera origin
 
         # Calculate distance using pythagorean theorem
         # sqrt(x^2 + y^2 + z^2)
@@ -83,46 +85,32 @@ class Detector:
         # Algorithm from https://automaticaddison.com/how-to-perform-pose-estimation-using-an-aruco-marker/
         # Get the rotation and translation vectors
         rvecs, tvecs, obj_points = cv2.aruco.estimatePoseSingleMarkers(
-        corners,
-        aruco_marker_side_length,
-        mtx,
-        dst)
+            corners, aruco_marker_side_length, mtx, dst
+        )
 
         # The pose of the marker is with respect to the camera lens frame.
-        # Imagine you are looking through the camera viewfinder, 
+        # Imagine you are looking through the camera viewfinder,
         # the camera lens frame's:
         # x-axis points to the right
         # y-axis points straight down towards your toes
         # z-axis points straight ahead away from your eye, out of the camera
         for i, marker_id in enumerate(marker_ids):
-       
+
             # Store the translation (i.e. position) information
-            transform_translation_x = tvecs[i][0][0]
-            transform_translation_y = tvecs[i][0][1]
-            transform_translation_z = tvecs[i][0][2]
-    
+            translation = tvecs[i][0]
+
             # Store the rotation information
             rotation_matrix = np.eye(4)
             rotation_matrix[0:3, 0:3] = cv2.Rodrigues(np.array(rvecs[i][0]))[0]
             r = R.from_matrix(rotation_matrix[0:3, 0:3])
-            quat = r.as_quat()   
-         
-            # Quaternion format     
-            transform_rotation_x = quat[0] 
-            transform_rotation_y = quat[1] 
-            transform_rotation_z = quat[2] 
-            transform_rotation_w = quat[3] 
-            
+            quat = r.as_quat()
+
             # Euler angle format in radians
-            roll_x, pitch_y, yaw_z = euler_from_quaternion(transform_rotation_x, 
-                                                        transform_rotation_y, 
-                                                        transform_rotation_z, 
-                                                        transform_rotation_w)
-            
-            roll_x = math.degrees(roll_x)
-            pitch_y = math.degrees(pitch_y)
-            yaw_z = math.degrees(yaw_z)
-            return(roll_x, pitch_y, yaw_z)
+            euler_rotation = euler_from_quaternion(quat)
+            return (
+                translation,
+                euler_rotation,
+            )
 
     def image_callback(self, msg: Image):
         cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
@@ -133,33 +121,38 @@ class Detector:
 
         # If markers are detected
         if ids is not None:
-            roll_x, pitch_y, yaw_z = self.compute_pose(ids, coreners, self.marker_size, self.camera_matrix, self.dist_coeffs)
+            trans, rot = self.compute_pose(
+                ids, corners, self.marker_size, self.camera_matrix, self.dist_coeffs
+            )
             rvecs, tvecs, _objPoints = cv2.aruco.estimatePoseSingleMarkers(
                 corners, self.marker_size, self.camera_matrix, self.dist_coeffs
             )
-            self.get_metrics_from_pose1(self, marker_ids, tvecs, rvecs):
-
             for i in range(len(corners)):
                 distance, bearing, roll, pitch, yaw = self.get_metrics_from_pose(
                     rvec=rvecs[i][0], tvec=tvecs[i][0]
                 )
-                rospy.loginfo(
-                    f"d:{distance:.2f}, b:{bearing:.2f}, rpy:{roll:.2f}, {pitch:.2f} {yaw:.2f} RPY:{roll_x:.2f}, {pitch_y:.2f} {yaw_z:.2f}")
+                rospy.logdebug(
+                    f"d:{distance:5.2f}, b:{bearing:5.2f}, rpy:({roll:6.2f},{pitch:6.2f},{yaw:6.2f}) rpy:({rot[0]:6.2f},{rot[1]:6.2f},{rot[2]:6.2f}) trans:({trans[0]:6.2f},{trans[1]:6.2f},{trans[2]:6.2f})"
+                )
                 self.aruco_message.data = [
-                    distance,
-                    bearing,
                     distance,
                     bearing,
                     roll,
                     pitch,
                     yaw,
+                    rot[0],
+                    rot[1],
+                    rot[2]
                 ]
                 self.aruco_pub.publish(self.aruco_message)
 
             if DEBUG:
                 # Draw detected markers on the image
+                for id in ids:
+                    cv2.drawFrameAxes(cv_image, self.camera_matrix, self.dist_coeffs, rvecs, tvecs, self.marker_size)
                 cv_image = cv2.aruco.drawDetectedMarkers(cv_image, corners, ids)
-                ros_image = self.bridge.cv2_to_imgmsg(cv_image, "mono8")
+                # ros_image = self.bridge.cv2_to_imgmsg(cv_image, "mono8")
+                ros_image = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
                 self.image_pub.publish(ros_image)
 
     def camera_info_callback(self, msg: CameraInfo):
