@@ -27,7 +27,7 @@ def invert_angle(angle: float) -> float:
     return invert
 
 def normalize_angle(angle: float):
-    """Convert an angle to a normalized angle. A normalized angle, for us, is
+    """Convert a radians ngle to a normalized angle. A normalized angle, for us, is
     in radians, -pi < angle < pi. 0 is at 3 o'clock, positive is counterclockwise"""
     angle_out = angle
     if angle_out < 0:
