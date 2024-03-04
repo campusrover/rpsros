@@ -1,7 +1,7 @@
 <launch>
   <node name="aruco_detect" pkg="aruco_detect" type="aruco_detect">
     <param name="image_transport" value="compressed" />
-    <param name="publish_images" value="false" />
+    <param name="publish_images" value="true" />
     <param name="fiducial_len" value="0.05" />
     <param name="dictionary" value="10" />
     <param name="do_pose_estimation" value="true" />
