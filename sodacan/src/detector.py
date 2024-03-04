@@ -98,7 +98,7 @@ class Detector:
                 # Trying which algo works correctly if any.
                 # self.rpy0 = self.rvec2RPY0(rvec)
                 # self.rpy1 = self.rvec2RPY1(rvec)
-                self.rpy2 = self.rvec2RPY2(rvec)
+                self.rpy2 = self.rvec2RPY1(rvec)
 
                 # Calculate distance using pythagorean theorem
                 self.distance = sqrt(tvec[0] ** 2 + tvec[1] ** 2 + tvec[2] ** 2)
@@ -110,7 +110,7 @@ class Detector:
                 # It is also unclear which of the three components are R-P or Y. So I have empircally measured to determine that when YAW the marker it is affecting the second
                 # Component which according to me is Pitch. It has to do with orientation of the marker and the camera. For now I satisfy myself with empircally (trial and error) 
                 # deciding which means what.
-                self.aruco_message.data = [self.distance, self.bearing, bu.normalize_angle(self.rpy2[1])]
+                self.aruco_message.data = [self.distance, self.bearing, self.rpy2[0]]
                 self.aruco_pub.publish(self.aruco_message)
 
             if DEBUG:
