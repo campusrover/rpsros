@@ -1,0 +1,8 @@
+<launch>
+  <include file="$(find sodacan)/launch/include/micro.launch" />
+  <include file="$(find sodacan)/launch/include/mini.launch" />
+  <include file="$(find sodacan)/launch/include/transforms.launch" />
+  <include file="$(find sodacan)/launch/include/joystick.launch" />
+  <include file="$(find sodacan)/launch/include/camera.launch" />
+  <include file="$(find sodacan)/launch/include/aruco_detect.launch" />
+</launch>
