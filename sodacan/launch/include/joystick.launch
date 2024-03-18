@@ -1,0 +1,10 @@
+<launch>
+  <node pkg="teleop_twist_joy" name="teleop_twist_joy" type="teleop_node">
+    <rosparam command="load" file="$(find sodacan)/param/joy/joy.yaml" />
+  </node>
+  <node pkg="joy" type="joy_node" name="joy_node">
+    <param name="/dev" type="string" value="/dev/input/js0" />
+    <param name="/autorepeat_rate" type="double" value="8.00" />
+    <param name="/coalesce_interval" type="double" value="0.002" />
+  </node>
+</launch>

@@ -18,6 +18,12 @@
    <material name="grey">
     <color rgba="0.5 0.5 0.5 1"/>
   </material>
+  <material name="beige">
+    <color rgba="0.95 0.90 0.80 1.0"/>
+</material>
+<material name="orange">
+  <color rgba="1.0 0.65 0.0 1.0" />
+</material>
 
  <joint name="base_link_to_base_footprint" type="fixed">
     <parent link="base_footprint"/>
@@ -89,16 +95,15 @@
       <geometry>
         <box size="0.05 0.05 0.05"/>
       </geometry>
-      <material name="purple"/>
+      <material name="orange"/>
     </visual>
    </link>
 
-  <joint name="base_link_to_camera_link" type="fixed">
-    <parent link="base_link"/>
+  <joint name="Footprint_to_camera_link" type="fixed">
+    <parent link="base_footprint"/>
     <child link="camera_link"/>
-    <origin xyz="0.08 0 0.05" rpy="0 0 3.141"/>
+    <origin xyz="0.08 0 0.1"  rpy="${-pi/2} 0 ${-pi/2}"/>
   </joint>
-
 
  <link name="imu_link">
     <visual>
