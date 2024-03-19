@@ -9,5 +9,5 @@
   <!-- Set up the map server with an empty map -->
   <node pkg="map_server" type="map_server" name="map_server" args="$(find sodacan)/maps/empty_map.yaml" />
 
-  <node pkg="tf" type="static_transform_publisher" name="fiducial_to_map" args="0 0 0 0 0 0 map fiducial_0 100" />
+  <node pkg="tf" type="static_transform_publisher" name="fiducial_to_map" args="0 0 0 0 0 0 map odom 100" />
 </launch>
