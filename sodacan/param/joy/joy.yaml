@@ -1,0 +1,14 @@
+# Logitech - Bullet
+
+axis_linear: 3  # Right Joystick
+scale_linear: 0.5
+scale_linear_turbo: 1.1
+
+axis_angular: 2  # Right Joystick
+scale_angular: 1.0
+scale_angular_turbo: 4.0
+
+enable_button: 6  # LT
+enable_turbo_button: 4  # LB
+
+# https://wiki.ros.org/joy

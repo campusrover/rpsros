@@ -1,0 +1,19 @@
+<launch>
+
+    <!-- Publish Linorobot odometry -->
+    <node pkg="linorobot" name="lino_base_node" type="lino_base_node"></node>
+
+    <!-- IMU Relay and Filter -->
+    <include file="$(find sodacan)/launch/include/imu.launch" />
+
+    <!-- Odom-IMU Extended Kalman Filter-->
+    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization">
+        <remap from="odometry/filtered" to="odom" />
+        <rosparam command="load" file="$(find sodacan)/param/ekf/robot_localization.yaml" />
+    </node>
+
+    <!-- Onboard instrumentaion
+    <node pkg="prrexamples" type="robogym.py" name="robogym"/>  -->
+
+7</launch>
+
