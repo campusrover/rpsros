@@ -28,7 +28,7 @@ local_costmap:
   update_frequency: 10.0
   publish_frequency: 5.0
   static_map: false
-
+  
 # Sensor parameters
 scan:
   topic: /scan
