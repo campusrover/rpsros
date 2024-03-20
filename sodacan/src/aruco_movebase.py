@@ -4,13 +4,42 @@ import rospy
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped
+
 import tf2_ros
-import tf2_geometry_msgs
 
 class ArucoMoveBase():
     def __init__(self):
         # Initialize ROS node
-        rospy.init_node('set_tf_as_navigation_goal')
+        rospy.init_node('arucomovebase')
+
+    def set_initial_pose(self):
+
+        # Create a publisher for the initial pose
+        initial_pose_pub = rospy.Publisher('initialpose', PoseWithCovarianceStamped, queue_size=10)
+
+        # Create a PoseWithCovarianceStamped message
+        initial_pose_msg = PoseWithCovarianceStamped()
+
+        # Set the header frame ID to the map frame
+        initial_pose_msg.header.frame_id = 'map'
+
+        # Set the robot's position and orientation
+        initial_pose_msg.pose.pose.position.x = 0.0
+        initial_pose_msg.pose.pose.position.y = 0.0
+        initial_pose_msg.pose.pose.position.z = 0.0
+
+        initial_pose_msg.pose.pose.orientation.x = 0.0
+        initial_pose_msg.pose.pose.orientation.y = 0.0
+        initial_pose_msg.pose.pose.orientation.z = 0.0
+        initial_pose_msg.pose.pose.orientation.w = 1.0
+
+        # Publish the initial pose
+        initial_pose_pub.publish(initial_pose_msg)
+
+    def get_pose_in_tf(self, pose_tf, dest_tf):
+        
+
 
     def set_tf_as_navigation_goal(self, from_frame, to_frame):
         # Create a client for the move_base action
@@ -56,4 +85,5 @@ class ArucoMoveBase():
 
 if __name__ == '__main__':
     an = ArucoMoveBase()
+    an.set_initial_pose()
     an.set_tf_as_navigation_goal("fiducial_0")
