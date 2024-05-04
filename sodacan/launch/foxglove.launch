@@ -1,0 +1,8 @@
+<!-- roslaunch rosbridge_server rosbridge_websocket.launch
+roslaunch foxglove_bridge foxglove_bridge.launch
+ -->
+
+<launch>
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+  <include file="$(find foxglove_bridge)/launch/foxglove_bridge.launch" />
+</launch>
