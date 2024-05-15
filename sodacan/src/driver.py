@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
+""" This is an attempt at driving the robot to the fiducial and then picking it up.
+I have decided not to worry about approaching the payload head on. Given the size of the robot and the size of my space,
+I think that will be very difficult without the ability to move sideways which I don't have.
+"""
 
 HZ = 20
 LINE_MOVE_TIME = 8
 LINE_PAUSE_TIME = 0.2
-LINE_SPEED = 0.3
+LINE_SPEED = 0.1
 
 import rospy
 from geometry_msgs.msg import Twist

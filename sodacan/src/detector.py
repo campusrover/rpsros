@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+""" This node uses opencv's support for fiducials to read fiducials and
+    compute bearing and distance. It is still experimental.
+"""
 
 import cv2
 import rospy
@@ -11,10 +14,8 @@ from math import atan2, sqrt, sin, cos
 from typing import NoReturn, Tuple
 from scipy.spatial.transform import Rotation as R
 from tf.transformations import euler_from_quaternion
-import bru_utils as bu
 
 DEBUG = True
-
 
 class Detector:
     def __init__(self, marker_size: float):
