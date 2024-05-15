@@ -14,11 +14,8 @@ class ArucoNavigator:
     def __init__(self):
         rospy.init_node("aruco_navigator")
         # Create a client for the move_base action
-        move_base_client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
+        move_base_client = actionlib.SimpleActionClient("move_base", MoveBaseAction)
         move_base_client.wait_for_server()
-
-
-
 
         self.aruco_frame_id = "fiducial_0"
         self.cmd_vel_pub = rospy.Publisher("cmd_vel", Twist, queue_size=1)
@@ -62,26 +59,34 @@ class ArucoNavigator:
     def set_initial_position(self):
         listener = tf.TransformListener()
         # Wait for the transformation between odom and base_link to become available
-        listener.waitForTransform('odom', 'base_link', rospy.Time(), rospy.Duration(1.0))
+        listener.waitForTransform(
+            "odom", "base_link", rospy.Time(), rospy.Duration(1.0)
+        )
         # Wait for the transformation between odom and base_link to become available
-        listener.waitForTransform('odom', 'base_link', rospy.Time(), rospy.Duration(1.0))
+        listener.waitForTransform(
+            "odom", "base_link", rospy.Time(), rospy.Duration(1.0)
+        )
+
     try:
         # Get the current transform between odom and base_link
-        (translation, rotation) = listener.lookupTransform('odom', 'base_link', rospy.Time(0))
+        (translation, rotation) = listener.lookupTransform(
+            "odom", "base_link", rospy.Time(0)
+        )
 
         # Set the initial navigation position to equal the current odometry position
         initial_navigation_position = translation
 
-        rospy.loginfo("Initial navigation position set to: %s", initial_navigation_position)
+        rospy.loginfo(
+            "Initial navigation position set to: %s", initial_navigation_position
+        )
 
     except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
         rospy.logwarn("Failed to get odometry transform")
 
-
-
     def stop(self):
         self.cmd_vel_pub.publish(Twist())
         self.navigate = False
+
 
 if __name__ == "__main__":
     nav = ArucoNavigator()
