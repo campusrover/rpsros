@@ -14,8 +14,8 @@ import numpy as np
 ppi = 72  # pixels per inch
 tag_count = 2
 strip_length_inch = 8.25
-strip_height_inch = 2.4
-tag_height_inch = 1.8
+strip_height_inch = 3.4
+tag_height_inch = 3.0
 
 
 # Initialize dimensions
@@ -28,7 +28,7 @@ strip = 255 * np.ones((strip_height_in_pixels,
                       strip_length_in_pixels), dtype=np.uint8)
 
 # Define ARuco dictionary
-aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
+aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_ARUCO_MIP_36h12)
 
 # Calculate spacing for `tag_count` markers to be equally distributed
 space_between_markers = (strip_length_in_pixels - tag_count * marker_side_length) / (
