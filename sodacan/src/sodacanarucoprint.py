@@ -29,7 +29,6 @@ strip = 255 * np.ones((strip_height_in_pixels,
 
 # Define ARuco dictionary
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_ARUCO_MIP_36h12)
-
 # Calculate spacing for `tag_count` markers to be equally distributed
 space_between_markers = (strip_length_in_pixels - tag_count * marker_side_length) / (
     tag_count + 1
