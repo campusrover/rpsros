@@ -86,7 +86,7 @@ class Follow:
         self.max_angular_rate = rospy.get_param("~max_angular_rate", 1.2)
 
         # Angular velocity when a fiducial is not in view
-        self.lost_angular_rate = rospy.get_param("~lost_angular_rate", 0.6)
+        self.lost_angular_rate = rospy.get_param("~lost_angular_rate", 0.3)
 
         # Proportion of linear error to use as linear velocity
         self.linear_rate = rospy.get_param("~linear_rate", 0.6)
@@ -175,7 +175,7 @@ class Follow:
     Main loop
     """
     def run(self):
-        self.rate = rospy.Rate(20)
+        self.rate = rospy.Rate(5)
 
         # Setup the variables that we will use later
         self.linSpeed = 0.0
@@ -215,7 +215,7 @@ class Follow:
             self.angSpeed = 0
 
         # A fiducial was detected since last iteration of this loop
-        elif self.got_fid:
+        elif self.got_fid and forward_error > 0:
             # Set the turning speed based on the angular error
             # Add some damping based on the previous speed to smooth the motion
             self.angSpeed = angular_error * self.angular_rate - self.angSpeed / 2.0
@@ -238,30 +238,25 @@ class Follow:
         elif not self.got_fid and self.times_since_last_fid < self.hysteresis_count:
             # Decrease the speed (assuming linear decay is <1)
             self.linSpeed *= self.linear_decay
-            rospy.loginfo(f"... blindly trying {self.linSpeed:0.2} {self.angSpeed:0.2}")
+            rospy.loginfo(f"... cant see fid, trying x:{self.linSpeed:0.2f} z:{self.angSpeed:0.2f}")
 
         # Try to refind fiducial by rotating
-        elif self.got_fid == False and self.times_since_last_fid < self.max_lost_count:
+        elif not self.got_fid and self.times_since_last_fid < self.max_lost_count:
             # Stop moving forward
             self.linSpeed = 0
             # Keep turning in the same direction
-            if self.angSpeed < 0:
+            if self.angSpeed <= 0:
                 self.angSpeed = -self.lost_angular_rate
             elif self.angSpeed > 0:
                 self.angSpeed = self.lost_angular_rate
             else:
                 self.angSpeed = 0
-            rospy.logdebug(
-                f"...Try keep rotating to refind fiducial: try# {self.times_since_last_fid}")
-            rospy.info(f"... rotating {self.linSpeed:0.2} {self.angSpeed:0.2}")
+            rospy.loginfo(f"... rotating x:{self.linSpeed:0.2f} z:{self.angSpeed:0.2f} try#{self.times_since_last_fid}")
 
         else:
             self.angSpeed = 0
             self.linSpeed = 0
-            rospy.info(f"... arrived {self.linSpeed:0.2} {self.angSpeed:0.2}")
-
-        rospy.logdebug(
-            f"...Speeds: linear {self.linSpeed:0.2f} angular {self.angSpeed:0.2f}")
+            rospy.loginfo(f"... on target: x:{self.linSpeed:0.2f} z:{self.angSpeed:0.2f}")
 
         # Create a Twist message from the velocities and publish it
         # Avoid sending repeated zero speed commands, so teleop
