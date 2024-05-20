@@ -1,6 +1,6 @@
 # This code does the following:
-# - Initializes a 6x2 inch strip at a resolution of 100 pixels per inch, resulting in a 600x200 pixel image.
-# - Generates four ARuco markers using a specific dictionary.
+# - Prints a strip of copies of a specified count, tag, size and resolution
+# - Generates the ARuco markers using a specific dictionary.
 # - Calculates the positions for these markers to be equally spaced on the strip.
 # - Draws each ARuco marker onto the strip at the calculated positions.
 # - Displays the strip with ARuco tags in a window.
@@ -24,7 +24,8 @@ strip_height_in_pixels = int(ppi * strip_height_inch)
 marker_side_length = int(tag_height_inch * ppi)
 
 # Create a white strip
-strip = 255 * np.ones((strip_height_in_pixels, strip_length_in_pixels), dtype=np.uint8)
+strip = 255 * np.ones((strip_height_in_pixels,
+                      strip_length_in_pixels), dtype=np.uint8)
 
 # Define ARuco dictionary
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
@@ -38,7 +39,8 @@ space_between_markers = (strip_length_in_pixels - tag_count * marker_side_length
 for i in range(tag_count):
     # Generate ARuco tag
     tag_id = i  # Use i as the tag ID for differentiation
-    tag_img = cv2.aruco.generateImageMarker(aruco_dict, tag_id, marker_side_length)
+    tag_img = cv2.aruco.generateImageMarker(
+        aruco_dict, tag_id, marker_side_length)
 
     # Calculate tag's top-left corner position
     x_position = int((i + 1) * space_between_markers + i * marker_side_length)
@@ -46,8 +48,8 @@ for i in range(tag_count):
 
     # Place Aruco tag on the strip
     strip[
-        y_position : y_position + marker_side_length,
-        x_position : x_position + marker_side_length,
+        y_position: y_position + marker_side_length,
+        x_position: x_position + marker_side_length,
     ] = tag_img
 
 # Display the strip
