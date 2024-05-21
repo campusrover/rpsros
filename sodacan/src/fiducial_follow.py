@@ -27,10 +27,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """
 Fiducial Follow Demo.  Receives trasforms to fiducials and generates
-movement commands for the robot to follow the fiducial of interest. Updated to python3 and some refactoring.
+movement commands for the robot to follow the fiducial of interest. 
+
+
+Updated to python3 and some refactoring.
 """
-
-
 
 
 import rospy
@@ -43,6 +44,8 @@ import traceback
 import math
 import time
 from datetime import datetime, timedelta
+import signal
+import sys
 
 def degrees(r):
     return 180.0 * r / math.pi
@@ -53,7 +56,12 @@ class Follow:
     Constructor for our class
     """
 
+    def signal_handler(self, signal, frame):
+        print("Shutting down ROS node...")
+        rospy.signal_shutdown("Ctrl+C pressed")
+
     def __init__(self):
+        signal.signal(signal.SIGINT, self.signal_handler)        
         rospy.init_node('fiducial_follow')
 
         # Set up a transform listener so we can lookup transforms in the past
@@ -71,13 +79,13 @@ class Follow:
         self.suppressCmd = False
 
         # The name of the coordinate frame of the fiducial we are interested in
-        self.target_fiducial = rospy.get_param("~target_fiducial", "fid0")
+        self.target_fiducial = rospy.get_param("~target_fiducial", "fid1")
 
         # Minimum distance we want the robot to be from the fiducial
         self.min_dist = rospy.get_param("~min_dist", 0.6)
 
         # Maximum distance a fiducial can be away for us to attempt to follow
-        self.max_dist = rospy.get_param("~max_dist", 2.5)
+        self.max_dist = rospy.get_param("~max_dist", 3.0)
 
         # Proportion of angular error to use as angular velocity
         self.angular_rate = rospy.get_param("~angular_rate", 0.8)
@@ -89,10 +97,10 @@ class Follow:
         self.lost_angular_rate = rospy.get_param("~lost_angular_rate", 0.3)
 
         # Proportion of linear error to use as linear velocity
-        self.linear_rate = rospy.get_param("~linear_rate", 0.6)
+        self.linear_rate = rospy.get_param("~linear_rate", 0.3)
 
         # Maximum linear speed (meters/second)
-        self.max_linear_rate = rospy.get_param("~max_linear_rate", 1.0)
+        self.max_linear_rate = rospy.get_param("~max_linear_rate", 0.6)
 
         # Linear speed decay (meters/second)
         self.linear_decay = rospy.get_param("~linear_decay", 0.9)
@@ -121,7 +129,7 @@ class Follow:
         self.linSpeed = 0
         time_diff = imageTime - rospy.Time.now()
 
-        rospy.logdebug(f"Fiducial Detected {time_diff.to_sec():0.3} seconds")
+        rospy.loginfo(f"Fiducial Detected {time_diff.to_sec():0.3} seconds")
         found = False
 
         # For every fiducial found by the dectector, publish a transform
@@ -167,9 +175,11 @@ class Follow:
             self.fid_x = ct.x
             self.fid_y = ct.y
             self.got_fid = True
+            rospy.logdebug(f"... x:{ct.x:0.2f} y: {ct.y:0.2f}")
         except:
             traceback.print_exc()
-            rospy.logdebug(f"...Could not get tf for {self.target_fiducial}")
+            rospy.logwarn(f"...Could not get tf for {self.target_fiducial}")
+
 
     """
     Main loop
@@ -183,6 +193,7 @@ class Follow:
         self.times_since_last_fid = 0
         self.looping = True
         self.got_fid = False
+        self.activity = "none"
 
         # While our node is running
         while not rospy.is_shutdown() and self.looping:
@@ -201,8 +212,8 @@ class Follow:
         # atan2 works for any point on a circle (as opposed to atan)
 
         angular_error = math.atan2(self.fid_y, self.fid_x)
-        rospy.logdebug(
-            f"... Errors: forward {forward_error} lateral {lateral_error} angular {degrees(angular_error)}")
+        # rospy.loginfo(
+        #     f"... error: fwd:{forward_error:0.2f} lat:{lateral_error:0.2f} ang:{degrees(angular_error):0.2f}")
 
         if self.got_fid:
             self.times_since_last_fid = 0
@@ -210,7 +221,7 @@ class Follow:
             self.times_since_last_fid += 1
 
         if forward_error > self.max_dist:
-            rospy.loginfo(".... Fiducial is too far away")
+            self.activity = "target out of range"
             self.linSpeed = 0
             self.angSpeed = 0
 
@@ -232,13 +243,21 @@ class Follow:
                 self.linSpeed = -self.max_linear_rate
             if self.linSpeed > self.max_linear_rate:
                 self.linSpeed = self.max_linear_rate
-            rospy.loginfo(f"... approaching {self.linSpeed:0.2} {self.angSpeed:0.2}")
+            self.activity = "approaching target"
+            # rospy.loginfo(f"... approaching {self.linSpeed:0.2} {self.angSpeed:0.2}")
+
+        elif self.got_fid and self.forward_error < 0:
+            activity = "arrived"
+            # rospy.loginfo(f"... arrived: x:{self.linSpeed:0.2} y:{self.angSpeed:0.2}")
+            self.linSpeed = 0
+            self.angSpeed = 0
 
         # Hysteresis, don't immediately stop if the fiducial is lost
         elif not self.got_fid and self.times_since_last_fid < self.hysteresis_count:
             # Decrease the speed (assuming linear decay is <1)
             self.linSpeed *= self.linear_decay
-            rospy.loginfo(f"... cant see fid, trying x:{self.linSpeed:0.2f} z:{self.angSpeed:0.2f}")
+            self.activity = "cant see target"
+            # rospy.loginfo(f"... cant see fid, trying x:{self.linSpeed:0.2f} z:{self.angSpeed:0.2f}")
 
         # Try to refind fiducial by rotating
         elif not self.got_fid and self.times_since_last_fid < self.max_lost_count:
@@ -251,7 +270,8 @@ class Follow:
                 self.angSpeed = self.lost_angular_rate
             else:
                 self.angSpeed = 0
-            rospy.loginfo(f"... rotating x:{self.linSpeed:0.2f} z:{self.angSpeed:0.2f} try#{self.times_since_last_fid}")
+            self.activity = "rotating"
+            # rospy.loginfo(f"... rotating x:{self.linSpeed:0.2f} z:{self.angSpeed:0.2f} try#{self.times_since_last_fid}")
 
         else:
             self.angSpeed = 0
@@ -264,12 +284,13 @@ class Follow:
         zeroSpeed = (self.angSpeed == 0 and self.linSpeed == 0)
         if not zeroSpeed:
             self.suppressCmd = False
-        rospy.logdebug(f"... zerospeed: {zeroSpeed} suppressCmd: {self.suppressCmd}")
+        # rospy.logdebug(f"... zerospeed: {zeroSpeed} suppressCmd: {self.suppressCmd}")
         if not self.suppressCmd:
             twist = Twist()
             twist.angular.z = self.angSpeed
             twist.linear.x = self.linSpeed
             self.cmdPub.publish(twist)
+            rospy.loginfo(f"...cmd_vel x:{twist.linear.x:0.2f}, z:{twist.angular.z:0.2f}")
             if zeroSpeed:
                 self.suppressCmd = True
 
