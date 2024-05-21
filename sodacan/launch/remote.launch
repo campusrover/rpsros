@@ -1,6 +1,0 @@
-<launch>
-  <!-- <node pkg="sodacan" type="controller.py" name="controller" output="screen" /> -->
-
-  <node pkg="sodacan" type="detector.py" name="detector" output="screen"/>
-
-</launch>
