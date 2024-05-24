@@ -33,6 +33,9 @@ movement commands for the robot to follow the fiducial of interest.
 Updated to python3 and some refactoring.
 """
 
+
+
+
 import rospy
 from geometry_msgs.msg import TransformStamped, Twist
 from fiducial_msgs.msg import FiducialTransform, FiducialTransformArray
@@ -44,7 +47,6 @@ import time
 from datetime import datetime, timedelta
 import signal
 import sys
-
 def degrees(r):
     return 180.0 * r / math.pi
 
@@ -56,14 +58,15 @@ class Follow:
 
     def signal_handler(self, signal, frame):
         print("Shutting down ROS node...")
+        self.looping = False
         rospy.signal_shutdown("Ctrl+C pressed")
 
     def __init__(self):
-        signal.signal(signal.SIGINT, self.signal_handler)        
+        signal.signal(signal.SIGINT, self.signal_handler)
         rospy.init_node('fiducial_follow')
 
         # Set up a transform listener so we can lookup transforms in the past
-        self.tfBuffer = tf2_ros.Buffer(rospy.Time(30))
+        self.tfBuffer = tf2_ros.Buffer(rospy.Duration(30))
         self.lr = tf2_ros.TransformListener(self.tfBuffer)
 
         # Setup a transform broadcaster so that we can publish transforms
@@ -80,7 +83,7 @@ class Follow:
         self.target_fiducial = rospy.get_param("~target_fiducial", "fid1")
 
         # Minimum distance we want the robot to be from the fiducial
-        self.min_dist = rospy.get_param("~min_dist", 0.6)
+        self.min_dist = rospy.get_param("~min_dist", 0.8)
 
         # Maximum distance a fiducial can be away for us to attempt to follow
         self.max_dist = rospy.get_param("~max_dist", 3.0)
@@ -95,7 +98,7 @@ class Follow:
         self.lost_angular_rate = rospy.get_param("~lost_angular_rate", 0.3)
 
         # Proportion of linear error to use as linear velocity
-        self.linear_rate = rospy.get_param("~linear_rate", 0.3)
+        self.linear_rate = rospy.get_param("~linear_rate", 0.4)
 
         # Maximum linear speed (meters/second)
         self.max_linear_rate = rospy.get_param("~max_linear_rate", 0.6)
@@ -118,96 +121,90 @@ class Follow:
         self.fid_x = self.min_dist
         self.fid_y = 0
         self.got_fid = False
+        self.timelist = []
 
     """
     Called when a FiducialTransformArray is received
     """
+
     def newTf(self, msg):
+        imageTime = msg.header.stamp
+        self.timelist.append(imageTime)
+        self.linSpeed = 0
+        time_diff = imageTime - rospy.Time.now()
+
+        rospy.logdebug(f"Fiducial Detected {time_diff.to_sec():0.3} seconds")
+        found = False
+
+        # For every fiducial found by the dectector, publish a transform
+        for m in msg.transforms:
+            id = m.fiducial_id
+            trans = m.transform.translation
+            rot = m.transform.rotation
+            rospy.logdebug("... Fid %d %lf %lf %lf %lf %lf %lf %lf\n" %
+                           (id, trans.x, trans.y, trans.z,
+                            rot.x, rot.y, rot.z, rot.w))
+            t = TransformStamped()
+            t.child_frame_id = "fid%d" % id
+            t.header.frame_id = msg.header.frame_id
+            t.header.stamp = imageTime
+            t.transform.translation.x = trans.x
+            t.transform.translation.y = trans.y
+            t.transform.translation.z = trans.z
+            t.transform.rotation.x = rot.x
+            t.transform.rotation.y = rot.y
+            t.transform.rotation.z = rot.z
+            t.transform.rotation.w = rot.w
+            # self.br.sendTransform(t)
+
+            if t.child_frame_id == self.target_fiducial:
+                # We found the fiducial we are looking for
+                found = True
+
+                # Add the transform of the fiducial to our buffer
+                self.tfBuffer.set_transform(t, "follow")
+        if not found:
+            return  # Exit this function now, we don't see the fiducial
         try:
-            imageTime = msg.header.stamp
-            self.linSpeed = 0
-            time_diff = imageTime - rospy.Time.now()
+            # Get the fiducial position relative to the robot center, instead of the camera
+            tf = self.tfBuffer.lookup_transform(
+                "base_link", self.target_fiducial, imageTime)
+            ct = tf.transform.translation
+            cr = tf.transform.rotation
+            rospy.logdebug(
+                f"...T_fidBase {ct.x:.2f} {ct.y:.2f} {cr.x:.2f} {cr.y:.2f} {cr.z:.2f} {cr.w:.2f}")
 
-            rospy.logdebug(f"Fiducial Detected {time_diff.to_sec():0.3} seconds")
-            found = False
-
-            # For every fiducial found by the dectector, publish a transform
-            for m in msg.transforms:
-                id = m.fiducial_id
-                trans = m.transform.translation
-                rot = m.transform.rotation
-                rospy.logdebug("... Fid %d %lf %lf %lf %lf %lf %lf %lf\n" %
-                    (id, trans.x, trans.y, trans.z,
-                    rot.x, rot.y, rot.z, rot.w))
-                t = TransformStamped()
-                t.child_frame_id = "fid%d" % id
-                t.header.frame_id = msg.header.frame_id
-                t.header.stamp = imageTime
-                t.transform.translation.x = trans.x
-                t.transform.translation.y = trans.y
-                t.transform.translation.z = trans.z
-                t.transform.rotation.x = rot.x
-                t.transform.rotation.y = rot.y
-                t.transform.rotation.z = rot.z
-                t.transform.rotation.w = rot.w
-                self.br.sendTransform(t)
-
-                if t.child_frame_id == self.target_fiducial:
-                    # We found the fiducial we are looking for
-                    found = True
-
-                    # Add the transform of the fiducial to our buffer
-                    self.tfBuffer.set_transform(t, "follow")
-            if not found:
-                return  # Exit this function now, we don't see the fiducial
-            try:
-                # Get the fiducial position relative to the robot center, instead of the camera
-                tf = self.tfBuffer.lookup_transform(
-                    "base_link", self.target_fiducial, imageTime)
-                ct = tf.transform.translation
-                cr = tf.transform.rotation
-                rospy.logdebug(
-                    f"...T_fidBase {ct.x:.2f} {ct.y:.2f} {cr.x:.2f} {cr.y:.2f} {cr.z:.2f} {cr.w:.2f}")
-
-                # Set the state varibles to the position of the fiducial
-                self.fid_x = ct.x
-                self.fid_y = ct.y
-                self.got_fid = True
-                rospy.logdebug(f"... x:{ct.x:0.2f} y: {ct.y:0.2f}")
-            except:
-                traceback.print_exc()
-                rospy.logwarn(f"...Could not get tf for {self.target_fiducial}")
-        except Exception as e:
-            print(f"***** {e}")
-
+            # Set the state varibles to the position of the fiducial
+            self.fid_x = ct.x
+            self.fid_y = ct.y
+            self.got_fid = True
+        except:
+            traceback.print_exc()
+            rospy.logwarn(f"...Could not get tf for {self.target_fiducial}")
 
     """
     Main loop
     """
+
     def run(self):
-        try:
-            self.rate = rospy.Rate(5)
+        self.rate = rospy.Rate(5)
 
-            # Setup the variables that we will use later
-            self.linSpeed = 0.0
-            self.angSpeed = 0.0
-            self.times_since_last_fid = 0
-            self.looping = True
-            self.got_fid = False
-            self.activity = "none"
+        # Setup the variables that we will use later
+        self.linSpeed = 0.0
+        self.angSpeed = 0.0
+        self.times_since_last_fid = 0
+        self.looping = True
+        self.got_fid = False
+        self.activity = "none"
 
-            # While our node is running
-            while not rospy.is_shutdown() and self.looping:
-                try:
-                    self.loop()
-                except rospy.ROSInterruptException:
-                    rospy.info("Received ROSInterruptionException")
-                    self.looping = False
-                except Exception as e:
-                    print(f"***** {e}")
-                self.rate.sleep()
-        except Exception as e:
-            print(f"***** {e}")
+        # While our node is running
+        while not rospy.is_shutdown() and self.looping:
+            try:
+                self.loop()
+            except rospy.ROSInterruptException:
+                rospy.info("Received ROSInterruptionException")
+                self.looping = False
+            self.rate.sleep()
 
     def new_fiducial_seen(self):
         if self.got_fid:
@@ -215,7 +212,6 @@ class Follow:
         else:
             self.times_since_last_fid += 1
         return self.got_fid
-
 
     def loop(self):
         # don't do anything until you see a new fiducial message
@@ -231,12 +227,12 @@ class Follow:
 
         angular_error = math.atan2(self.fid_y, self.fid_x)
         if forward_error > self.max_dist:
-            self.activity = "target out of range"
+            self.activity = "out of range"
             self.linSpeed = 0
             self.angSpeed = 0
 
         # A fiducial was detected since last iteration of this loop
-        elif self.got_fid and forward_error > 0:
+        elif self.got_fid and forward_error > 0.05:
             # Set the turning speed based on the angular error
             # Add some damping based on the previous speed to smooth the motion
             self.angSpeed = angular_error * self.angular_rate - self.angSpeed / 2.0
@@ -253,12 +249,7 @@ class Follow:
                 self.linSpeed = -self.max_linear_rate
             if self.linSpeed > self.max_linear_rate:
                 self.linSpeed = self.max_linear_rate
-            self.activity = "approaching target"
-
-        elif self.got_fid and self.forward_error < 0:
-            activity = "arrived"
-            self.linSpeed = 0
-            self.angSpeed = 0
+            self.activity = "approaching"
 
         # Hysteresis, don't immediately stop if the fiducial is lost
         elif not self.got_fid and self.times_since_last_fid < self.hysteresis_count:
@@ -301,7 +292,8 @@ class Follow:
 
         # We already acted on the current fiducial
         self.got_fid = False
-        rospy.loginfo(f""""{self.activity}" x:{self.linSpeed:0.2f} z:{self.angSpeed:0.2f} """)
+        rospy.loginfo(
+            f""""{self.activity}" speed-lin:{self.linSpeed:0.2f} ang:{self.angSpeed:0.2f} fwd_err: {forward_error:0.2f} fidx: {self.fid_x:0.2f}""")
 
 
 if __name__ == "__main__":
