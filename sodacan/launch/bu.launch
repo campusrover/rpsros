@@ -1,10 +1,14 @@
 <launch>
+  <arg name="fox" default="true"/>
+
   <include file="$(find sodacan)/launch/include/micro.launch" />
   <include file="$(find sodacan)/launch/include/mini.launch" />
   <include file="$(find sodacan)/launch/include/transforms.launch" />
   <include file="$(find sodacan)/launch/include/joystick.launch" />
   <include file="$(find sodacan)/launch/include/camera.launch" />
   <include file="$(find sodacan)/launch/include/aruco_detect.launch" />
-  <include file="$(find sodacan)/launch/include/foxglove.launch" />
+  <group if="$(arg fox)">
+    <include file="$(find sodacan)/launch/include/foxglove.launch" />
+  </group>
   <include file="$(find sodacan)/launch/include/slam.launch" />
 </launch>
