@@ -12,8 +12,5 @@
         <rosparam command="load" file="$(find sodacan)/param/ekf/robot_localization.yaml" />
     </node>
 
-    <!-- Onboard instrumentaion
-    <node pkg="prrexamples" type="robogym.py" name="robogym"/>  -->
-
 7</launch>
 
