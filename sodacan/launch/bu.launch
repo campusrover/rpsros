@@ -1,5 +1,7 @@
 <launch>
   <arg name="fox" default="true"/>
+  <arg name="slam" default="false"/>
+
 
   <include file="$(find sodacan)/launch/include/micro.launch" />
   <include file="$(find sodacan)/launch/include/mini.launch" />
@@ -10,5 +12,7 @@
   <group if="$(arg fox)">
     <include file="$(find sodacan)/launch/include/foxglove.launch" />
   </group>
-  <include file="$(find sodacan)/launch/include/slam.launch" />
+  <group if="$(arg slam)">
+    <include file="$(find sodacan)/launch/include/slam.launch" />
+  </group>
 </launch>
