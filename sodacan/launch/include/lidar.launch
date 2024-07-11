@@ -1,0 +1,3 @@
+<launch>
+    <include file="$(find lidar)/launch/include/lidar/ydlidar.launch" />
+</launch>
