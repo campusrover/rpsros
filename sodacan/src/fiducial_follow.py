@@ -38,7 +38,7 @@ Updated to python3 and some refactoring.
 
 import rospy
 from geometry_msgs.msg import TransformStamped, Twist
-from fiducial_msgs.msg import FiducialTransform, FiducialTransformArray
+# from fiducial_msgs.msg import FiducialTransform, FiducialTransformArray
 import tf2_ros
 from math import pi, sqrt, atan2
 import traceback
