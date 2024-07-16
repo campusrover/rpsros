@@ -1,3 +1,3 @@
 <launch>
-    <include file="$(find lidar)/launch/include/lidar/ydlidar.launch" />
+    <include file="$(find linorobot)/launch/include/lidar/ydlidar.launch" />
 </launch>
