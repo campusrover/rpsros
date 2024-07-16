@@ -12,7 +12,4 @@
   <group if="$(arg fox)">
     <include file="$(find sodacan)/launch/include/foxglove.launch" />
   </group>
-  <group if="$(arg slam)">
-    <include file="$(find sodacan)/launch/include/slam.launch" />
-  </group>
 </launch>
