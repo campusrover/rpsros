@@ -1,12 +1,11 @@
 <launch>
-  <arg name="fox" default="true"/>
-  <arg name="slam" default="false"/>
+  <arg name="fox" default="false" doc="enable foxglove"/>
+  <arg name="slam" default="false" doc="enable for slam run"/>
+  <arg name="joy" default="false" doc="enable joystick"/>
 
 
-  <include file="$(find sodacan)/launch/include/micro.launch" />
   <include file="$(find sodacan)/launch/include/mini.launch" />
-  <include file="$(find sodacan)/launch/include/transforms.launch" />
-  <include file="$(find sodacan)/launch/include/joystick.launch" />
+  <include file="$(find sodacan)/launch/include/joystick.launch" if="$(arg joy)" />
   <include file="$(find sodacan)/launch/include/camera.launch" />
   <include file="$(find sodacan)/launch/include/aruco_detect.launch" />
   <include file="$(find sodacan)/launch/include/lidar.launch" />

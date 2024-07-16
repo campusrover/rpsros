@@ -1,5 +1,11 @@
 <launch>
 
+    <!-- Start ROS communication between the robot's computer and Linorobot base -->
+    <node pkg="rosserial_python" name="rosserial_lino" type="serial_node.py" output="screen">
+        <param name="port" value="/dev/linobase" />
+        <param name="baud" value="57600" />
+    </node>
+
     <!-- Publish Linorobot odometry -->
     <node pkg="linorobot" name="lino_base_node" type="lino_base_node"></node>
 
@@ -12,5 +18,17 @@
         <rosparam command="load" file="$(find sodacan)/param/ekf/robot_localization.yaml" />
     </node>
 
-7</launch>
+    <!-- Robot URDF definition -->
+  <arg name="model" default="$(find sodacan)/urdf/platform3.urdf"/>
+  <param name="robot_description" command="$(find xacro)/xacro $(arg model)" />
+
+  <!-- Send joint values -->
+  <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher">
+  </node>
+  
+  <!-- Combine joint values to TF-->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+
+
+</launch>
 
