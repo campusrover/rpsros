@@ -1,5 +1,5 @@
 <launch>
-  <arg name="fox" default="true" doc="enable foxglove"/>
+  <arg name="fox" default="false" doc="enable foxglove"/>
   <arg name="slam" default="false" doc="enable for slam run"/>
   <arg name="joy" default="false" doc="enable joystick"/>
 
