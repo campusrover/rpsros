@@ -13,5 +13,4 @@
   <include file="$(find sodacan)/launch/include/foxglove.launch" if="$(arg fox)" />
   <include file="$(find sodacan)/launch/include/slam.launch"  if="$(arg slam)" />
   <include file="$(find sodacan)/launch/include/navigate.launch"  if="$(arg nav)" />
-  </group>
 </launch>
