@@ -6,10 +6,10 @@
   <arg name="camera" default="true" doc="enable camera"/>
   <arg name="fid" default="true" doc="enable fiducial aruco detect"/>
   <include file="$(find sodacan)/launch/include/mini.launch" />
+  <include file="$(find sodacan)/launch/include/lidar.launch" />
   <include file="$(find sodacan)/launch/include/joystick.launch" if="$(arg joy)" />
   <include file="$(find sodacan)/launch/include/camera.launch" if="$(camera)" />
   <include file="$(find sodacan)/launch/include/aruco_detect.launch" if="$(fid)"/>
-  <include file="$(find sodacan)/launch/include/lidar.launch" />
   <include file="$(find sodacan)/launch/include/foxglove.launch" if="$(arg fox)" />
   <include file="$(find sodacan)/launch/include/slam.launch"  if="$(arg slam)" />
   <include file="$(find sodacan)/launch/include/navigate.launch"  if="$(arg nav)" />
