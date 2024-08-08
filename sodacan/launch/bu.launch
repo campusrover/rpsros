@@ -5,6 +5,7 @@
   <arg name="nav" default="false" doc="setup for navigation"/>
   <arg name="camera" default="true" doc="enable camera"/>
   <arg name="fid" default="false" doc="enable fiducial aruco detect"/>
+  
   <include file="$(find sodacan)/launch/include/mini.launch" />
   <include file="$(find sodacan)/launch/include/lidar.launch" />
   <include file="$(find sodacan)/launch/include/joystick.launch" if="$(arg joy)" />
